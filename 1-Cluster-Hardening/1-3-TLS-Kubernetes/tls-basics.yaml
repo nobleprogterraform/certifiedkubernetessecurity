@@ -1,0 +1,97 @@
+7.1 Kubernetes security primitive
+	- Our focus in this lecture is more on Kubernetes related security. Who can access the cluster(Authentication) and what can they do 
+		(Authorization). There are different ways that you can authenticate to the API server, starting with user IDs and passwords stored
+		in static files or tokens, certificates, or even integration with external authentication providers like LDAP.
+	- All communication with the cluster between the various components such as the ETCD cluster, the kube-controller-manager, scheduler, API server,
+		as well as those running on the worker nodes such as the Kubelet and the kube-proxy is secured using TLS encryption
+	- What about communication between applications within the cluster? By default, all Pods can access all other Pods
+		within the cluster.Now, you can restrict access between them using network policies.
+
+
+7.2 Authentication	
+	- In this lecture, our focus is on securing access to the Kubernetes cluster with authentication mechanisms.
+	- There are two types of users, humans such as the administrators and developers, and robots such as other processes
+		or services or applications that require access to the cluster. Kubernetes does not manage user accounts natively.
+		It relies on an external source like a file with user details or certificates or a third party identity service,
+		like LDAP to manage these users
+	- All user access is managed by the API server, whether you're accessing the cluster through Kubecontrol tool or the API directly.
+		All of these requests go through the Kube API server. The Kube API server authenticates the request before processing it.
+	- First way of auth is, You can create a list of users and their passwords in a CSV file(three columns, password, username, and user ID) 
+		and use that as the source for user information. kubeapi server service should be updated with --basic-auth-file=user-details.csv
+		and You must then restart the Kube API server for these options to take effect.
+	- Remember that this authentication mechanism that stores usernames, passwords, and tokens in clear text in a static file, is not 
+		a recommended approach as it is insecure.
+
+
+7.3 SSL TLS Certificates Basics
+	- A certificate is used to guarantee trust between two parties during a transaction. For example, when a user tries to access a web server,
+		TLS certificates ensure that the communication between the user and the server is encrypted and the server is who it says it is.
+	- In order to send credentials safely over network, credentials must be encrypted
+		The data is encrypted using a key,which is basically a set of random numbers and alphabets. The data is then sent to the server
+	- Symmetric encryption: in symmetric encryption both data/credentials and the key are sent over network to server. there is a risk of a
+		hacker gaining access to the key and decrypting the data
+	- Asymmetric encryption: Instead of using a single key to encrypt and decrypt data, asymmetric encryption uses a pair of keys,a private 
+		key and a public key. Public key (or public lock) is used to lock some access and private key is used to decrypt/unlock the access.
+	- For securing ssh access to servers, we can generate key pair using ssh-keygen command, id_rsa is private key  id_rsa.pub is public key
+		You then secure your server by adding an entry with your public key into the server's SSH authorized_keys file 
+		(cat ~/.ssh/authorized_keys) and you login to server by providing private key in ssh command. ssh -i id_rsa ubuntu@ip_address_server
+	- What if other users need access to your servers, copy their public keys/locks to all the servers, and now other users can access the servers
+		using their private keys
+	- What if we could somehow get the symmetric key to the server safely( without sending both plain key and credentials over network).
+		To securely transfer the symmetric key from the client to the server, we use asymmetric encryption.
+		So we generate a public and private key pair on the server using openssl, openssl genrsa -out my-bank.key 1024 (private key)
+		openssl rsa -in my-bank.key -pubout > mybank.pem (public key)
+		When the browser first accesses the web server using HTTPS, it gets the public key from the server. The browser then encrypts the 
+		symmetric key using this public key. The server uses the private key to decrypt the message and retrieve the symmetry key from it.
+		The symmetric key is now safely available only to the user and the server. 
+	- Now how does user/browser make sure that public key sent by the server is legitimate and not sent by a hacker. 
+		When the server sends the public key,it does not send the key alone, it sends a certificate that has the key in it.
+		It has information about who the certificate is issued to, the public key of that server,the location of that server, etc.
+	- But anyone can generate a certificate like this. Most impartant bit about certificate is Who signed and issued the certificate.
+		Certificate authorities or CAs are well known organizations that can sign and validate your certificates for you.
+		Some of the popular ones are Symantec, DigiCert, Comodo, GlobalSign etc. 
+		you generate a certificate signing a request or CSR using the private key you generated earlier and the domain name of your website.
+		openssl req -new -key my-bank.key -out my-bank.csr -sub "/C=US/ST=CA/O=MyOrg.Inc/CN=mydomain.com"
+		The certificate authorities verify your details and once it checks out, they sign the certificate and send it back to you.
+		You now have a certificate signed by a CA that the browsers trust. Hacker will fail at validation stage by CA if he requests CSR.
+	- But how do the browsers know that the CA itself is legitimate?, The CAs themselves have a set of public and private key pairs.
+		The CAs use their private keys to sign the certificates. The public keys of all the CAs are built in to the browsers.
+		The browser uses the public key of the CA to validate that the certificate was actually signed by the CA themselves
+	- These are public CAs that help us ensure the public websites we use like email,banks. To validate sites hosted privately, 
+		say payroll service within your organization, you can host your own private CAs. Most of these public CA companies offer 
+		CA server that you can deploy internally within your company. You can then have the public key of your internal CAs server installed
+		on all your employees browsers and establish secure connectivity within your organization.
+	- Till now we established way to identify the server's identity but can server check identity of client?
+		For this, as part of the initial trust building exercise, the server can request a certificate from the client.
+		And so the client must generate a pair of keys and a signed certificate from a valid CA.
+		The client then sends the certificate to the server for it to verify that the client is who they say they are
+		TLS client certificates are not generally implemented on web servers (eg user using browser to access websites)
+	- This whole infrastructure, including the CA, the servers, the people, and the process of generating, distributing and maintaining
+		digital certificates is known as public key infrastructure or PKI
+	- You can encrypt the data using both private and public keys but can not both encrypt and decrypt the data using same key. 
+		Remember to use public key for encryption and private key for decrypting. If you use private key for encryption then anyone who has
+		your public key can decrypt data.
+
+
+7.4 TLS in Kubernetes
+	- Naming convention about keys. Certificates with public keys are named CRT or PED extension eg server.crt or server.ped. 
+		Private keys are with extension .key or with -key in filename like server.key or server-key.pem
+	- How these concepts relate to a Kubernetes cluster.The Kubernetes cluster consists of a set of master and worker nodes.
+		Of course, all communication between these nodes need to be secure and must be encrypted.
+		For example, an administrator interacting with the Kubernetes cluster through the kubectl utility
+		or while accessing the Kubernetes API directly must establish secure TLS connection.
+	- Kube-apiserver exposes an HTTPS service that other components, as well as external users, uses to manage kubernetes cluster
+		needs to have server certificates (apiserver.cert and apiserver.key) to secure all communication with its clients
+	- Another server in the cluster is the etcd server. The etcd server stores all information about the cluster.
+		So it requires a pair of certificate and key for itself (etcdserver.cert and etcdserver.key) kubeadm certs check-expiration
+	- The other server component in the cluster is on the worker nodes.They are the kubelet services.
+		They also expose an HTTPS API endpoint that the kube-apiserver talks to, to interact with the worker nodes.
+	- Let's now look at the client components: Admin user who uses kubectl rest api to access kube-apiserver. 
+		The admin user requires a certificate and key pair (admin.cert admin.key) to authenticate to the kube-API server.
+	- The scheduler is a client that accesses the kube-apiserver to look for pods that require scheduling. 
+	- The Kube Controller Manager and kube-proxy are also client to the kube-apiserver and required TLS authentication
+	- Servers also communicate among themselves, eg kube-apiserver talks to etcd server so its a client for etcdserver and needs
+		tls authentication
+	- The kube-apiserver also talks to the kubelet server on each of the individual nodes.
+	- Remember, Kubernetes requires you to have at least one certificate authority for your cluster. CAs have its own pair of 
+		certificate and key. lets call it ca.cert and ca.key

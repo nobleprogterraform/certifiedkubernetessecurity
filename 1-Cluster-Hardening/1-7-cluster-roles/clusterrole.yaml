@@ -1,0 +1,44 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-administrator
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["nodes"]
+  verbs: ["get", "list", "delete", "create"]
+
+
+
+  ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-admin-role-binding
+subjects:
+- kind: User
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-administrator
+  apiGroup: rbac.authorization.k8s.io
+
+
+  	Cluster Roles and bindings
+- We know that roles and role bindings are namespaced, meaning they are created within namespaces. we discussed about namespaces
+	and how it helps in grouping, or isolating, resources like pods, deployments, and services. 
+	But what about other resources like nodes? Can you group or isolate nodes within a namespace? No, those are cluster-wide
+	or cluster-scoped resources. So the resources are categorized as either namespaced or cluster-scoped.
+- Example of namespaced resources: Pods, Replicasets, deployments, services, secrets, roles, rolebindings,configmaps
+- Example of cluster scoped resources: nodes, persistent volumes, clusterroles, clusterrolebindings, certificatesigningrequests,namespaces
+- To see a full list of namespaced and cluster scoped resources run: kubectl api-resources --namspaced=true/false
+- How do we authorize users to cluster-wide resources like nodes. That is where you use cluster roles and cluster role bindings
+- Creating a cluster role using definition file
+	
+- create cluster role binding
+	
+- You can also create a cluster role for namespaced resources as well like Pods. When you do that, the user will have access to these resources
+	across all namespaces. 
+	Kubernetes creates a number of cluster roles by default when the cluster is first set up
+- kubectl auth can-i create nodes --as cluster-admin
+- kubectl auth can-i delete namespaces --as cluster-admin

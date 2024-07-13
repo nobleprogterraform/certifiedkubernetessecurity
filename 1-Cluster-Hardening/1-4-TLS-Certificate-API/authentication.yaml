@@ -1,0 +1,134 @@
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: sahdev
+spec:
+  signerName: kubernetes.io/kube-apisever-client
+  groups:
+  - system:authenticated
+  usages:
+  - digital signature
+  - key encipherment
+  - client auth
+  request:
+    LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBNQTBHQTFVRUF3d0djMkZvWkdWMk1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJDZ0tDQVFFQTUvQ0xFYTJBRnF2RjczVnJ3WVd2UmpGSkN2RkM0RDB0VjZnMzF3N1ZXNnhxCnRCN2lrbFNvQ1g4bEIra0NuQ3dtdTlhZXUySWdNSjBwc3NGaisvbDY1bi9kaDhneEtLd1RiNThMQVJLcVZOd3IKZDJXVEhxcjA0NVdHT0ltZlZLWHl3K2pZNFBaL2JydVdOS3NVSXBEQmNuTENwQTRYekFjUSsxSld2Z1BWaTVXSgpHeFYzUEVkMHlMbzFVRkFzYlZtZUZPWGdyNFdIaU5LV2xrRkRrN2pxSUh3T0ZwZ05vdHlBbzA5Mk9lV3Z6RzJLCnNjRGZETWhOL2ROR25oVGd3WVhRQkllWDVUUTBHM2t0dmRaNHo3RnJnNmVLZTZ1N1FEZVlhQXg0ZDRlYWVPWFAKZlBCOVZRSC9kYU5obVdHMVdWK0RLVG5UdnhlaEVyaHRRb2VUTjl2N0NRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBQzExREZEL3FocjQ3VVJPNmRUR1pPcHNSQUh0cnNob0lKTGFsVDViOEFSaDRubThWTkVEClY0ODFQWHVicWhuUVNIaHRPV3BGK0M0WTlGQjJsa1hycGFHTWJ1Vks0NWpqYTN4dzc1aGl3UXBXSUVLZ2Q4UFQKMy9uOGxCNE9Tc09MM0RuTWZlMXV3QWZvK3c2K0xXY0pDNnUyb3cwQ3piWWtzNXJyenVGRU04Nmo1YVhuZkp4ZQoxQUJxRzl2dHhQeklDRjM2bG1PZ2g2cHU0WXB5ZlYzSVNUblNTQWNHWm8wN2szZ0xFOWE3eDVMNEYrcG9mVmtoCmFmVGEvRnM1OGFnWHhMbXNlL0tickJFQ3hERE9keFhlWk9xVFRhN1pxb3F1UjFuc1pCVFhIQm9XeU9pT051S3gKT29GUzE0aFJ6UzBzbEE3bXlQZ0lMNHdXb2kyK0xNeGxGQXc9Ci0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+
+  sudo openssl genrsa -out sahdev.key 2048
+  sudo openssl req -new -key sahdev.key -subj "/CN=sahdev" -out sahdev.csr
+  cat sahdev.csr | base64 | tr -d "\n"
+  kubectl get csr
+  kubectl certificate approve sahdev
+  kubectl get csr sahdev -o
+
+
+  - Our focus in this lecture is more on Kubernetes related security. Who can access the cluster(Authentication) and what can they do 
+		(Authorization). There are different ways that you can authenticate to the API server, starting with user IDs and passwords stored
+		in static files or tokens, certificates, or even integration with external authentication providers like LDAP.
+	- All communication with the cluster between the various components such as the ETCD cluster, the kube-controller-manager, scheduler, API server,
+		as well as those running on the worker nodes such as the Kubelet and the kube-proxy is secured using TLS encryption
+	- What about communication between applications within the cluster? By default, all Pods can access all other Pods
+		within the cluster.Now, you can restrict access between them using network policies.
+		
+		1. Authentication:
+		
+		In this lecture, our focus is on securing access to the Kubernetes cluster with authentication mechanisms.
+		- There are two types of users, humans such as the administrators and developers, and robots such as other processes
+		or services or applications that require access to the cluster. Kubernetes does not manage user accounts natively.
+		It relies on an external source like certificates or a third party identity service,
+		like LDAP to manage these users
+		All user access is managed by the API server, whether you're accessing the cluster through Kubecontrol tool or the API directly.
+		All of these requests go through the Kube API server. The Kube API server authenticates the request before processing it.
+		
+		SSL TLS Certificates Basics:
+		- A certificate is used to guarantee trust between two parties during a transaction. For example, when a user tries to access a web server,
+		TLS certificates ensure that the communication between the user and the server is encrypted and the server is who it says it is.
+	- In order to send credentials safely over network, credentials must be encrypted
+		The data is encrypted using a key,which is basically a set of random numbers and alphabets. The data is then sent to the server
+	- Symmetric encryption: in symmetric encryption both data/credentials and the key are sent over network to server. there is a risk of a
+		hacker gaining access to the key and decrypting the data
+	- Asymmetric encryption: Instead of using a single key to encrypt and decrypt data, asymmetric encryption uses a pair of keys,a private 
+		key and a public key. Public key (or public lock) is used to lock some access and private key is used to decrypt/unlock the access.
+	- For securing ssh access to servers, we can generate key pair using ssh-keygen command, id_rsa is private key  id_rsa.pub is public key
+		You then secure your server by adding an entry with your public key into the server's SSH authorized_keys file 
+		(cat ~/.ssh/authorized_keys) and you login to server by providing private key in ssh command. ssh -i id_rsa ubuntu@ip_address_server
+	- What if other users need access to your servers, copy their public keys/locks to all the servers, and now other users can access the servers
+		using their private keys
+	- Certificate authorities or CAs are well known organizations that can sign and validate your certificates for you.
+		Some of the popular ones are Symantec, DigiCert, Comodo, GlobalSign etc. 
+		you generate a certificate signing a request or CSR using the private key you generated earlier and the domain name of your website.
+		openssl req -new -key my-bank.key -out my-bank.csr -sub "/C=US/ST=CA/O=MyOrg.Inc/CN=mydomain.com"
+		The certificate authorities verify your details and once it checks out, they sign the certificate and send it back to you.
+		You now have a certificate signed by a CA
+	- The CAs themselves have a set of public and private key pairs.
+		The CAs use their private keys to sign the certificates
+	-  as part of the initial trust building exercise, the server can request a certificate from the client.
+		And so the client must generate a pair of keys and a signed certificate from a valid CA.
+		The client then sends the certificate to the server for it to verify that the client is who they say they are
+	-  This whole infrastructure, including the CA, the servers, the people, and the process of generating, distributing and maintaining
+		digital certificates is known as public key infrastructure or PKI
+		
+		TLS in Kubernetes:
+		The Kubernetes cluster consists of a set of master and worker nodes.
+		Of course, all communication between these nodes need to be secure and must be encrypted.
+		For example, an administrator interacting with the Kubernetes cluster through the kubectl utility
+		or while accessing the Kubernetes API directly must establish secure TLS connection.
+	- Kube-apiserver exposes an HTTPS service that other components, as well as external users, uses to manage kubernetes cluster
+		needs to have server certificates (apiserver.cert and apiserver.key) to secure all communication with its clients
+	- Another server in the cluster is the etcd server. The etcd server stores all information about the cluster.
+		So it requires a pair of certificate and key for itself (etcdserver.cert and etcdserver.key) kubeadm certs check-expiration
+	- The other server component in the cluster is on the worker nodes.They are the kubelet services.
+		They also expose an HTTPS API endpoint that the kube-apiserver talks to, to interact with the worker nodes.
+	- Let's now look at the client components: Admin user who uses kubectl rest api to access kube-apiserver. 
+		The admin user requires a certificate and key pair (admin.cert admin.key) to authenticate to the kube-API server.
+	- The scheduler is a client that accesses the kube-apiserver to look for pods that require scheduling. 
+	- The Kube Controller Manager and kube-proxy are also client to the kube-apiserver and required TLS authentication
+	- Servers also communicate among themselves, eg kube-apiserver talks to etcd server so its a client for etcdserver and needs
+		tls authentication
+	- The kube-apiserver also talks to the kubelet server on each of the individual nodes.
+	- Remember, Kubernetes requires you to have at least one certificate authority for your cluster. CAs have its own pair of 
+		certificate and key. lets call it ca.cert and ca.key
+	
+	TLS in Kubernetes - Certificate and View Certificate details:
+		Kube-apiserver: API server is the most popular of all components within the cluster. Everyone talks to the Kube API server.
+		openssl x509 -in /etc/kubernetes/pki/apiserver.crt -text -noout
+		And so it goes by many names and aliases within the cluster like kubernetes, kubernetes.default, kubernetes.default.svc,
+		kubernetes.default.svc.cluster.local or the ip address of the pod where api server is running. 
+		But how do you specify all the alternate names? For that, you must create an OpenSSL config file and specify the alternate names
+		in the Alt Name section of the file. Pass this config file as an option while generating the certificate signing request.
+		Once you have apiserver.cert and apiserver.key and its client certificates for etcd and kubelet servers, then you need
+		to specify these certificates in kube api service configuration file. 
+		etcd: look at etcd specific certiciates
+		
+		it's important to know how the cluster was set up.There are different solutions available
+		for deploying a Kubernetes cluster, and they use different methods to generate and manage certificates.
+		If you were to deploy a Kubernetes cluster from scratch you generate all the certificates by yourself,
+		as we did in the previous lecture. Or else, if you were to rely on an automated provisioning tool like Cube ADM,
+		it takes care of automatically generating and configuring the cluster for you. While you deploy all the components
+		
+		Certificate API:
+		What is the CA server and where is it located in the Kubernetes setup?
+		The CA is really just a pair of key and certificate files we have generated. Whoever gains access to these pair of files
+		can sign any certificate for the Kubernetes environment.They can create as many users as they want with whatever privileges they want.
+		So these files need to be protected and stored in a safe environment. Say we place them on a server that is fully secure.
+		Now that server becomes your CA server.
+		The certificate key file is safely stored in that server and only on that server. Every time you want to sign a certificate,
+		you can only do it by logging into that server. As of now, we have the certificates placed on the Kubernetes master node itself.
+		So the master node is also our CA server.
+	- The Kubeadm tool does the same thing. It creates a CA pair of files and stores that on the master node itself.
+		So far, we have been signing requests manually, but as and when the users increase and your team grows,
+		you need a better automated way to manage the certificate signing requests, as well as to rotate certificates when they expire
+	- Kubernetes has a built-in certificates API that can do this for you. With the certificates API,you now send a certificate signing request
+		directly to Kubernetes through an API call
+	- When the administrator receives a certificate signing request. instead of logging onto the master node
+		and signing the certificate by himself, he creates a Kubernetes API object called CertificateSigningRequest
+		
+	-The administrator takes the key and creates a CertificateSigningRequest object. The CertificateSigningRequest object
+		is created like any other Kubernetes object, under spec and request field is where you specify
+		the certificate signing request sent by the user in base64 encoded form (cat jane.csr | base64)
+	- Once the object is created, all certificate signing requests can be seen by administrators by running the kubectl get csr
+		and approve by kubectl certificate approve jane
+		kubectl get csr jane -o yaml (output is base64 encoded certificate)
+	- Which of the kubernetes controlplane components is actually responsible for all the certificate-related operations?
+		All the certificate-related operations are carried out by the controller manager.
+	- kubectl deny csr agent-smith
+	- kubectl delete csr agent-smith

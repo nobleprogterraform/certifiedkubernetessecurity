@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+ name: db-policy
+spec:
+  podSelector:
+    matchLabels:
+      role: db
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          role: api-pod
+    ports:
+    - protocol: TCP
+      port: 3306
+  egress:
+  - to:
+    - ipBlpodSelectorock:
+        matchLabels:
+          role: api-pod
+    ports:
+    - protocol: TCP
+      port: 3306
+
+
+      	Network Policies:
+	- There are 2 types of network policies ingress and egress. When you define ingress and egress, remember you're only looking at the direction
+		in which the traffic originated (dont include the response back to the caller)
+	- One of the prerequisite for networking in Kubernetes is whatever solution you implement, the pods should be able to communicate with each other
+		without having to configure any additional settings like routes
+	- Kubernetes is configured by default with an all allow rule that allows traffic from any pod to any other pod or services within the cluster.
+	- If your security requirements does not allow web server to call DB directly (without going through API server) then in that case
+		you implement Network Policy. You can define rules within the network policy. In this case, I would say only allow ingress traffic
+		from the API pod on port 3306
+	- In order to link a network policy to a Pod we use same old technique of Labels and Selectors
+	- Remember that network policies are enforced by the network solution implemented on Kubernetes cluster and not all network solutions 
+		support network policies. 
+		Solutions that support Network Policies: Kube-router, Calico, Romana, Weave-net
+		Solutions that do not support Network policies: Flannel
+			 
+	- In above definition podSelector and namespaceSelector works as AND operator while ipBlock is an OR operator 
+

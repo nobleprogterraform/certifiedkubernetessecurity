@@ -1,0 +1,36 @@
+kubectl proxy --api-prefix=/
+http://localhost:8001/api/v1/pods /apis/apps/v1/deployments
+
+
+
+Kubernetes API Groups
+- Whatever operations we have done so far with the cluster, we've been interacting with the API server one way or the other
+	either through kubectl utility or direct api calls
+	curl http://kube-master:6443/version will give cluster version
+- The Kubernetes API is grouped into multiple such groups based on their purpose such as 
+	/metrics /healthz /version /api /apis /logs
+	metrics and health are used to monitor health of cluster, The logs are used for integrating with third-party logging applications
+- In this video, we will focus on the APIs responsible for the cluster functionality. which are /api and /apis
+	/api is called core group and /apis is called named group. The core group is where all core functionality exists
+	/api/v1/ (namespaces, pods,nodes,services,configmaps,bindings,endpoints,events,rc,pv,secrets etc)
+- /apis The named group APIs are more organized and going forward, all the newer features are going to be made available through 
+	these named groups.
+	It has api groups for /apps /extensions /networking.k8s.io /storage.k8s.io /authentication.k8s.io /certificates.k8s.io
+	under api groups it has resources, eg under /apis/apps it has v1/ (deployments, replicastes,statefulsets)
+	under /apis/certificates.k8s.io it has v1/certificatesigningrequest
+	under /apis/networking.k8s.io it has v1/networkpolicies
+	Each resource group (eg deployment, replicasets,networkingpolicies,certificatesigningrequest) there are actions associated with them,
+	these are called verbs. eg /apis/v1/deployments/ (list, get,create, delete, update, watch)
+- You can also view these on your Kubernetes cluster.Access curl https://kube-cluster:6443 
+- Quick not about api,If you were to access the API directly through cURL as shown above,then you will not be allowed access
+	except for certain APIs like version, as you have not specified any authentication mechanisms. 
+	So you have to authenticate to the API using your certificate files by passing them in the command line.
+	An alternate option is to start a Kube control proxy client. 
+	kubectl proxy --api-prefix=/
+	http://localhost:8001/api/v1/namespaces /apis/apps/v1/deployments
+	The Kube control proxy command (kubectl proxy) launches a proxy service 
+	locally on port 8001 and uses credentials and certificates from your Kube config file to access the cluster. That way, you don't have to specify
+	those in the cURL command. http://localhost:8001
+- Remember not to confuse between kubectl proxy vs kube proxy as they are 2 different serivces. Kube proxy is used to enable connectivity
+	between pods and services across different nodes in the cluster. Whereas Whereas Kube control proxy is an HTTP proxy service created 
+	by Kube control utility to access the Kube API server

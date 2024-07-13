@@ -1,0 +1,20 @@
+
+
+- kubelets in the kubernetes worker nodes registers the Node with the kubernetes cluster.
+	when it receives instructions to load a container or a part on the Node it requests the container runtime engine which may be docker or any other runtime engine to pull the required image and run an instance. And kubelet then continues to monitor the state of the pod and containers in it and reports the status to the kubeapi server on a timely basis so that's kind of the role of the kubelets in kuberenetes
+	- just refresh your memory to know that if you use a kubeadm tool to deploy your cluster we know that the kubeadm tool automatically downloads the required binaries and bootstraps or cluster however it does not automatically deploy the kubelet, you must always manually install the kublet on your worker node so that's something to note now before we look into security
+	- Kubelet config file is used for ease of deployment and configuration management so the object created within the files is named kubelet configuration and on kubelet service we pass the path to this file as a command line argument named config
+	- now let us go over some of these security aspects of kubelet how do we make sure that only responds to request from valid clients
+		10250 is port which is where the cubelette serves it APIs that allows full access and port 10255 which serves an API that allows unauthenticated unauthorized read-only access
+	- as you can imagine this is of course a big security risk anyone that knows the API address of these hosts can access these apis to perform anything that the apis are working
+	- Any request that comes to the kubelet is first authenticated and then authorized. authentication process decides if the user or the requesting entity has access to the API and the authorization process decides what areas of the API can be user access and what operations can they perform
+	
+	
+	- Which of the following files contain the kubelet configuration?
+		- find kubelet service first. ps -aux | grep kubelet 
+		- check the value of --config parameter in kubelet process 
+		- cat /var/lib/kubelet/config.yaml
+	- Which of the below is correct when it comes to the default ports for full access and read-only access for the kubelet?
+		- full access port 10250 and read-only access on port 10255
+	- Set readOnlyPort as 0 in /var/lib/kubelet/config.yaml as below
+		curl -sk http://localhost:10255/metrics

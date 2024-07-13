@@ -1,0 +1,28 @@
+openssl x509 -in /etc/kuber/pki/apiserver.crt -text -noout
+journalctl -u etcd.service -l
+
+7.6 View Certificate details:
+	- So you join a new team to help them manage their Kubernetes environment.
+		You're a new administrator to this team. You've been told that there are multiple issues related to certificates in the environment.
+		So you're asked to perform a health check of all the certificates in the entire cluster
+	- First of all, it's important to know how the cluster was set up.There are different solutions available
+		for deploying a Kubernetes cluster, and they use different methods to generate and manage certificates.
+		If you were to deploy a Kubernetes cluster from scratch you generate all the certificates by yourself,
+		as we did in the previous lecture. Or else, if you were to rely on an automated provisioning tool like Cube ADM,
+		it takes care of automatically generating and configuring the cluster for you. While you deploy all the components
+		as native services on the notes in the hard way, the Cube ADM tool deploys these as pods.So it's important to know where to look at,
+		to view the right information.
+	-  For the Cube API server definition file under /etsy/kubernetes/manifests folder. The command used to start the API server has information
+		about all the certificates it uses. For example, to view API server certificate file.Run the open SSL X509 command and provide the certificate
+		file as input to decode the certificate and view details. 
+		openssl x509 -in /etc/kuber/pki/apiserver.crt -text -noout
+	- If you set up the cluster from scratch by yourself and the services are configured as "native services" in the OS, you wanna start looking 
+		at the service logs using the operating systems logging functionality. 
+		command: journalctl -u etcd.service -l
+		In case you set up the cluster with Cube ADM
+		then the various components are deployed as pods. So you can look at the logs,using the cube control logs command followed
+		by the pod name. kubectl logs etcd-cluster
+		Sometimes if the core components, such as, the Kubernetes API server or the NCD server are down,
+		the cube control commands won't function. In that case, you have to go one level down to Docker to fetch the logs.
+		List all the containers using the Docker PS-A command (docker ps -a) and then view the logs using the Docker logs command
+		followed by the container ID. docker logs 87fc

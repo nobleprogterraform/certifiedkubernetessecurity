@@ -1,0 +1,49 @@
+create a private key - openssl genrsa -out ca.key 2048
+openssl req -new -key ca.key -subj "/CN=KUBERNETES-CA" -out ca.csr
+openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
+
+openssl genrsa -out admin.key 2048
+Certificate signing request: openssl req -new -key admin.key -subj "/CN=kube-admin" -out admin.csr (kube-admin is just name)
+sign certificate: openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -out admin.crt
+
+
+
+
+7.5 TLS in Kubernetes - Certificate creation
+	- To generate certificates, there are different tools available such as Easy-RSA, OpenSSL, or CFSSL, etc, or many others.
+		In this lecture we will use OpenSSL tool to generate the certificates
+	- We will start with the CA certificates. First we create a private key. openssl genrsa -out ca.key 2048 
+	- Then  generate a certificate signing request (CSR). openssl req -new -key ca.key -subj "/CN=KUBERNETES-CA" -out ca.csr
+	- Since this is for the CA itself it is self-signed by the CA using its own private key. 
+		So we sign the certificate using the OpenSSL. openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
+	- Going forward for all other certificates we will use this CA key pair (ca.crt ca.key) to sign them
+	- Now lets start generating the client certificates. Start by admin client.
+		Generate private key. openssl genrsa -out admin.key 2048
+		Certificate signing request: openssl req -new -key admin.key -subj "/CN=kube-admin" -out admin.csr (kube-admin is just name)
+		sign certificate: openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -out admin.crt
+		The certificate is like the validated User ID and the key is like the password.It's just that it's much more secure
+	- Next lest generate client certificate for kube-scheduler.kube-scheduler is a system component,
+		part of the Kubernetes control pane, so its name must be prefixed with the keyword system. The same with kube-controller-manager.
+	- An example use of admin certificate is to use it to call kube-apiserver instead of using username and password eg below	
+		curl https://kube-apiserver:6443/api/v1/pods --key=admin.key --cert=admin.cert --cacert=ca.cert
+		The other way is to move all of these parameters into a configuration file called kubeconfig.
+		Within that, specify the API server endpoint details, the certificates to use, et cetera.
+	- Let's look at the server-side certificates now. Firs is etcd server with name etcd-server and keys etcdserver.crt and etcdserver.key
+		These certificates need to configurd in etcd.yaml while starting etcd server. cat etcd.yaml
+	- Kube-apiserver: API server is the most popular of all components within the cluster. Everyone talks to the Kube API server.
+		And so it goes by many names and aliases within the cluster like kubernetes, kubernetes.default, kubernetes.default.svc,
+		kubernetes.default.svc.cluster.local or the ip address of the pod where api server is running. 
+		But how do you specify all the alternate names? For that, you must create an OpenSSL config file and specify the alternate names
+		in the Alt Name section of the file. Pass this config file as an option while generating the certificate signing request.
+		Once you have apiserver.cert and apiserver.key and its client certificates for etcd and kubelet servers, then you need
+		to specify these certificates in kube api service configuration file. 
+	- Next comes the kubelets server (ll /var/lib/kubelet/pki/). The kubelets server is an ACTPS API server that runs on each node,
+		responsible for managing the node.That's who the API server talks to, to monitor the node as well as send information regarding what pods
+		to schedule on this node. As such, you need a key certificate pair for each node in the cluster. Now, what do you name these certificates?
+		Are they all going to be named kubelets? No. They will be named after their nodes. Node zero one, node zero two, and node zero three.
+		Once the certificates are created, use them in the kubelet config file.
+	- We also need client certificates for kubelets that will be used by the kubelet to communicate with the Kube API server.
+		These are used by the kubelet to authenticate into the Kube API server. They need to be generated as well.
+		The API server needs to know which node is authenticating and give it the right set of permissions so it requires the nodes to have #
+		the right names in the right formats. Since the nodes are system components like the kube-scheduler
+		and the controller-manager we talked about earlier, the format starts with the system keyword,followed by node, and then the node name

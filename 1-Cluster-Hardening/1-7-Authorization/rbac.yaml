@@ -1,0 +1,56 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["ConfigMap"]
+  verbs: ["create"]
+
+
+      ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: devuser-developer-binding
+subjects:
+- kind: User
+  name: dev-user
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+
+
+
+  Authorization:
+- As an admin, we are able to perform any operation but soon we will have others accessing the cluster as well
+	such as the other administrators,developers,testers  et cetera.
+ 	But we don't want all of them to have the same level of access as us.
+	When we share our cluster between different organizations or teams, by logically partitioning it using name spaces,
+	we want to restrict access to the users to their name spaces alone. That is what authorization can help you within the cluster
+	
+- Role-based access controls make these much easier.instead of directly associating a user or a group with a set of permissions,
+	we define a role, in this case for developers. We create a role with the set of permissions required for developers
+	then we associate all the developers to that role. If a change is made to role all developers with role will be updated.
+	
+	Role Based Access Control (RBAC)
+- Creating a role using definition file
+	
+- The next step is to link the users to that role. For this, we create another object called role binding
+		
+- Also note that the roles and role bindings fall under the scope of name spaces. So here the dev user gets access
+	to pods and configmaps within the default name space. If you want to limit the dev user's access
+	within a different name space then specify the name space within the metadata of the definition file while creating them.
+- commands: kubectl get roles
+			kubectl describe role developer
+			kubectl edit role developer -n=blue
+			kubectl get rolebindings
+			kubectl describe rolebinding devuser-developer-binding
+			kubectl auth can-i create deployments
+			kubectl auth can-i delete pods --as dev-user-1
+			kubectl auth can-i create nodes --as dev-user-1 --namespace test

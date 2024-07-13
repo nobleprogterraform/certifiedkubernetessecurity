@@ -1,0 +1,79 @@
+- We will look at the kubernetes dashboard. Its one of the kubernetes sub project is a web-based graphical user interface known as the kubernetes dashboard. it may be used to get a graphical representation of the cluster and monitor various activities and even provision new resources on the cluster from the same interface so it's a powerful tool that can do a lot of things such as even view existing configurations including secrets stored on the cluster and not just view but it can also help in creating new applications and deploying them on the cluster as such 
+	- it is important that we protect access to it. in the earlier releases of the kubernetes dashboard access control was not really restricted and as such there have been instances of the dashboard being the target of cyber attacks.
+	- The kubernet is dashboard is deployed by applying the recommended configuration available at the kubernetes dashboard github repository and when deployed a namespace named as kubernetes dashboard is created within which a bunch of objects are created such as the deployment named kubernetes dashboard that hosts the dashboard UI server the service named kubernetes dashboard that exposes the deployment config Maps and a number of secret objects that stores certificates and by default service that exposes the dashboard is not set to load balancer or nodeport. is set to cluster IP meaning by default the dashboard is not accessible outside of the cluster and it's only accessible from within the cluster and this is done on purpose as we don't want the dashboard to be accessible publicly
+	- The VMs hosting your kubernetes cluster happens to have a graphical user interface and a Browser which is usually not the case but if you did then you could simply open a browser and go to the IP address of the service and access the dashboard but that's not possible since the server's hosting the cluster usually don't have a GUI so how do you access the kubernetes dashboard hosted on a cluster now what you really want to do is access the dashboard from your browser on your laptop machine now on our laptop we have the kubectl Utility and the cubeconfig file that we have been using to interact with the kubernetes cluster and we learned in the previous lecture on kubectl proxy that we could create a proxy to access a service within the kubernetes clusters safely from our laptop.
+	- so for this we run the equivalent proxy command which creates a proxy on localhost that proxies all requests to the API server on the kubernetes cluster and then we can now access a service within the cluster through this proxy now on your laptop you could open a browser and go to the localhost go to the URL localhost port 8001 which is a port of our proxy and then followed by apis like v1 / namespaces and the kubernetes dashboard namespace followed by services and the name of the service which is kubernetes dashboard service now that is https as well so we finally we specify that then we finally have the slash proxy path now we can now access the kubernetes dashboard from our laptop 
+	- for making the dashboard accessible across a team of users you need to exercise extreme caution and make sure that only users with the right privileges have access to it. so the whole reason we had to do this was because the kubernetes dashboard service has a type set to cluster IP which is not accessible outside the cluster so first how do we get around that now one thing that we could do is set its type to load balancer if the cluster is deployed in a Cloud. it makes the dashboard accessible outside of the clusters the public world but that is highly discouraged as we don't want our dashboard made public
+	- the other option is to set the service type to nodeport setting it to nodeport the port will expose the application on ports of the nodes in the cluster now if your confident that your network is secure then this may be a viable option
+	
+	- Now we look at the different authentication mechanisms available for the kubernetes dashboard and when you access the kubernetes dashboard you get two options to login one with a token and another with the tube config file login. With the token and you must create a user and give the user the necessary permissions using role-based access control which we have discussed earlier in this course the. only give the user the necessary level of permissions that could be limited to a particular namespace or specific resources within the namespace and this can be configured while creating roles and rule bindings now  (https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md)
+	- Once the user and the necessary roll bindings are created inspect the secret created that holds the token and this is a token that can be used to log into the dashboard interface or alternatively you can pass in a cubeconfig file that has a required credentials to access the dashboard
+	
+	- kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+		kubectl proxy --disable-filter &
+	- http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login
+	- Create cluster role with cluster admin access
+		apiVersion: rbac.authorization.k8s.io/v1
+		kind: ClusterRole
+		metadata:
+		  annotations:
+			rbac.authorization.kubernetes.io/autoupdate: "true"
+		  creationTimestamp: "2024-07-13T17:10:43Z"
+		  labels:
+			kubernetes.io/bootstrapping: rbac-defaults
+		  name: cluster-admin
+		  resourceVersion: "73"
+		  uid: dac5a864-3357-4c79-a365-df192e0321b8
+		rules:
+		- apiGroups:
+		  - '*'
+		  resources:
+		  - '*'
+		  verbs:
+		  - '*'
+		- nonResourceURLs:
+		  - '*'
+		  verbs:
+		  - '*'
+	- Create cluster role binding to bind clusterrole cluster-admin to a service account name admin-user
+		apiVersion: rbac.authorization.k8s.io/v1
+		kind: ClusterRoleBinding
+		metadata:
+		  creationTimestamp: "2024-07-13T17:25:55Z"
+		  name: admin-user-binding
+		  resourceVersion: "1677"
+		  uid: 04425b18-6feb-43b4-8df8-88e5bf90daf4
+		roleRef:
+		  apiGroup: rbac.authorization.k8s.io
+		  kind: ClusterRole
+		  name: cluster-admin
+		subjects:
+		- kind: ServiceAccount
+		  name: admin-user
+		  namespace: kubernetes-dashboard
+	- Create a service account name admin-user: kubectl create sa admin-user -n kubernetes-dashboard
+	- create a token for service account to login to dashboard: kubectl create token admin-user -n kubernetes-dashboard
+	- As you can see admin-user is too powerful, now create a readonly service account and assign the view cluster-role to this service account
+	- cat <<EOF | kubectl apply -f -
+	apiVersion: v1
+	kind: ServiceAccount
+	metadata:
+	  name: readonly-user
+	  namespace: kubernetes-dashboard
+	EOF
+
+	cat <<EOF | kubectl apply -f -
+	apiVersion: rbac.authorization.k8s.io/v1
+	kind: ClusterRoleBinding
+	metadata:
+	  name: readonly-user-binding
+	roleRef:
+	  apiGroup: rbac.authorization.k8s.io
+	  kind: ClusterRole
+	  name: view
+	subjects:
+	- kind: ServiceAccount
+	  name: readonly-user
+	  namespace: kubernetes-dashboard
+	EOF
+	- Now create a token for readonly service account to login to dashboard: kubectl create token readonly-user -n kubernetes-dashboard
