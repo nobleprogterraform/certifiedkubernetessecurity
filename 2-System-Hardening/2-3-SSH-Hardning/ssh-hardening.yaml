@@ -1,0 +1,25 @@
+	- In this session we will look at how to improve the security of our nodes by securing the SSH servers.
+	SSH is used for logging into a remote server and for executing commands on it. the basic syntax of doing this is ssh user@remote-server.
+	- The remote server however should have an SSH service running and port 22 accessible from the client for the connection to work another requirement is a valid username and password which should be created on the remote system or something known as an SSH key that you can use to login to the remote machine without a password 
+	- your laptop from which your trying to connect is the client and node1 where the ssh services running is the server 
+	- a more secure way to do this is to make use of cryptographic key pair that makes use of private and public keys to authenticate to the system to do this we need to first generate a key pair on the client a private key consider this as the key only you as the client will have and is not shared with anyone else and a public key as a name suggest it's public and hence it can be shared with others including our remote server 
+	- when the public key is installed on the remote server you can unlock it by connecting to it with a client that already has the private key 
+	- first create the key pair using the SSH-keygen command on client which for example can be a laptop (with optional passphrase)
+	- output of the command you can see that the public key is stored under the user's home directory  
+	- next step is to copy the public key to the remote server to do this you'll have to resort to a password based authentication at least once and easy way to do this is to make use of the command called SSH copy ID 
+	- once this is done you should be able to access the remote server without entering a password .the public key is installed in a specific file called authorised keys 
+	- now that we have learned about user accounts and passwordless SSH we can update the SSH configuration to improve the security of these system first let us disable the SSH for the root account this ensures that no one is able to login remotely using root account and only make use of their own account to connect to the system adhering to be principle of least privilege.
+	- we should never make use of the root account as on daily driver instead use regular system accounts and use privilege escalation systems like pseudo whenever elevated access is required. To disable root log in over SSH we have to update the SSH configuration file
+	-also now that we have enable passwordless authentication it's a good idea to disable password-based authentication completely and only make use of private key to access the server. restart the sshd service using systemctl restart sshd command the root account login and password base login to the server should be disabled
+
+	- Create a user named jim on node01 host and configure password-less ssh access from controlplane host (from user root) to node01 host (to user jim).
+	ssh node01
+	adduser jim
+	ssh-copy-id -i ~/.ssh/id_rsa.pub jim@node01 (keys already created, from controlplane node)
+	ssh jim@node01
+	
+	Disable ssh root login and disable password authentication for ssh on node01 host.
+	On node01 host open /etc/ssh/sshd_config
+	PermitRootLogin no
+	PasswordAuthentication no
+	Restart sshd service by using command service sshd restart

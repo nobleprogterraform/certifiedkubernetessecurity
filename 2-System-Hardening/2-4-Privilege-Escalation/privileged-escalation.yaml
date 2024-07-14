@@ -1,0 +1,11 @@
+
+
+
+
+- The previous step we disabled the root user login by SSH. we agreed that using root as a daily driver is a bad idea however there would be times where we need to run a command using the root user privileges such as when we try to install a new software or carrying out maintenance on the Host 
+	- so how do we do that now that the root use a login is disabled. The preferred way to run commands as a root user or a super user is to make use of sudo. The sudo command offers another approach to giving users administrative access when trusted users proceed.
+	- when using sudo users are prompted for their own password. the default configuration for pseudo is defined under /etc/sudoers file 
+	- this file defines the policies applied my pseudo command and can be updated using the visudo command like this only users listed in the slash etc pseudos file can make use of sudo command for privileges 
+	- this is an added security measure which prevents users from logging into a system as the root user. The administrator can give granular level of accessorum in this case the user called Mark has complete administrative privileges however the user called Sarah can only use pseudo to reboot the system 
+	- let us now look at the syntax of the sudoers file. Line that begin with the hash or a pound symbol are comments
+	The first Field is either the user or the group to which privileges have to be granted. Groups begin with a percentage symbol. The second field which by default is left to ALL specifies the host the user can make use of privileges now normal setup there is just one host which is the local host and as a result the value ALL implies the localhost in this case. The third field enclosed in brackets implies the users and groups the user in the first Field can run the command as this is normally left to the default value of all which means that any user can be used to run the commands the phone field is the command that you can run you can specify ALL here which means that the user can run any command without any restrictions or you can specify individual commands such as the shutdown -r now as in the case of user called Sarah 

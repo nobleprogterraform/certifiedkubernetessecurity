@@ -1,0 +1,24 @@
+	
+  
+  
+  - Let's see how we can keep our systems in a simple state by making sure only the required software is installed on them 
+	- it is always a good idea to keep the systems as lean as possible by making sure that only the required software is installed and the ones that are installed are constantly updated to address security fixes
+	- now first general rule is not just applicable for kubernetes specifically but security as a whole ask yourself this is Apache really needed on the notes of your kubernetes cluster. software that is not needed should not be installed on the Node for 1 you may never end up using it secondly it also increases the complexity of the system with more moving parts that need to be maintained constantly 
+	- next let's look at services. Services are used to start applications when the Linux system boots. In most modern day Linux distributions services are managed by the systemd process. the systemctl allows us to manage 
+	- it is essential that we identify and run only the services that are actually needed on the system you see a list of all services installed in the system. Run the command (systemctl list-units --type service). 
+	- if a service file is not needed stop and disable these service using the systemctl command 
+	- now that the service has been stopped and disabled, we can remove the package from the system 
+	- you can check these section 2 of the CIS benchmarks for distribution independent Linux for additional reference it provides recommendations about best practices to be followed while confering services
+	
+	- Which of the following commands is used to list all installed packages on an ubuntu system?
+		apt list --installed
+	-Which of the following commands can be used to list only active services on a system
+		systemctl list-units --type service (--all flag prints ALL services, --state inactive will filter only inactive ones)
+	- On the controlplane host, we have nginx service running which isn't needed on that system. Stop the nginx service and remove its service unit file. Make sure not to remove nginx package from the system
+		systemctl list-units --all | grep nginx (check the service and its unit file)
+		systemctl stop nginx (stop the service)
+		rm /lib/systemd/system/nginx.service (remove the unit file)
+	- Remove the nginx package from controlplane host.
+		apt remove nginx -y
+	- We have the wget package version v1.18 installed on the host controlplane. There were issues reported with the current version of wget. Please check for updates available for this package and update to the latest version available in the apt repos
+		apt install wget -y (you can install latest available version of a package using apt)

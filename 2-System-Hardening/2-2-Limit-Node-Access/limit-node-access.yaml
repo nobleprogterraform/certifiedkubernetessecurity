@@ -1,0 +1,32 @@
+		- commands id, who, last
+	- /etc/passwd, /etc/shadow /etc/group
+	- usermod -s /bin/nologin michael
+	- userdel bob
+	- deluser michel admin
+	- groupdel devs
+	
+	- Create a user named sam on the controlplane host. The user's home directory must be /opt/sam. Login shell must be /bin/bash and uid must be 2328. Make sam a member of the admin group.
+		useradd -d /opt/sam -s /bin/bash -G admin -u 2328 sam
+  
+  
+  - In this sesssion we will see how we can minimize the attack surface by limiting the access to the host. in the early section we learned about the different ways a user can access a kubernetes cluster such as using ABAC and RBAC but what about accessing the nodes themselves. 
+	As a standard practice we should limit exposure of the controlplane and worker nodes to the internet. 
+	- please know that if you are running a Management k8s Service on the cloud it is likely that in some cases you won't be able to access the controlplat nodes anyway however for self-hosted clusters or in some managed kubernetes providers provisioning the nodes in the private network is one way. To achieve with public access disabled we can then securely access the cluster via vpn solution.
+	-If implementing a VPN solution to access the private network isn't possible thenanother alternative is to enable authorize networks within the infrastructure firewall this option allows restricted access to be nodes based on the source IP address range that we can define on the infrastructure firewall for example we can allow connections from the IP range 44.44.44.0 / 24 and block connections another range such as 33.33.33.0/204
+	- ask yourself this who would need assisted access to the nodes of your cluster. system administrators would need access as the management making sure that it is in working state, upgraded and passed from time to time and of course to troubleshoot and fix issues on but do the developers need access to the nodes? or it can depend on the environment as well
+	- So let's now take a look at how we can manage user accounts there are four types user accounts.
+	individuals need access to the open system examples of a user account are those belonging system administrators and developers. 
+	a superhero account is the root which has the uid of zero the super user has unrestricted access and control over the system including other users.
+	system accounts are typically created during the os installation these are for the use by software and services.
+	service accounts are similar to the system accounts and are created when services are installed in Linux for example an nginx service that makes use of a service account for nginx to see details about users.
+	- we can make use of some very simple commands. 
+	- the ID command gives information about the users specifically the uid Gid and what other groups the user as part of 
+	- who command is used to see the list of users currently logged into the system 
+	- the last command list the last time users log into the system 
+	- most of the access control files are stored under the /etc folder the 
+	- /etc/passwd  - this file contains basic information about the users in the system including the username uid Gid home directory and default shell it is important to note that this file itself does not say in passwords the passwords are stored in the next file that we're going to see which is the /etc/shadow contains of this file is hashed.
+	the /etc/group file stores information about all the user groups of the system such as the group name a Gid and the members belonging to the group based on the information in the access control files for the principal of lease privilege 
+	-we should then remove or disable any account that has no use for in the system we can disable the user account by updating the default shell for the user no login when we said the no login shell for user just as the name suggest the user will not be able to log into the Host 
+	Alternatively we can also delete the account altogether using the userdel command. 
+	similarly we should also remove users from a group to this they shouldn't belong for example we can see that Michael is part of the admin group to remove him from this group on an Ubuntu system use the deluser command.  note that the topics discuss here are for local system accounts only and do not take into account those that are inactive services such as the active directory or LDAP accounts
+	

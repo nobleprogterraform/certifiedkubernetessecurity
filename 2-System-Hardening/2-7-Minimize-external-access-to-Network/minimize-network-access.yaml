@@ -1,0 +1,10 @@
+
+
+- In this lecture we will get introduced tools that can be used to restrict network access to our servers 
+	- In the previous lecture we saw that services and processes can bind to a port hosting for incoming connections for example the SSH server is running which is bind to the 22 on the server 
+	we then saw how to check for two service mappings by inspecting the /etc/services file check, Before this listening for incoming connections on the servers we can make use of 
+	- The next is address 0.0.0.0 without any additional configuration any device within the network can establish connection to the server on the node 
+	- here we have just looked at the SSH. Using the netstat command you can see that there are several other system and they can access connection from any other device 
+	- In a real world environment that has many different clients and many different servers or connected through a large network with many different switches and routers that's important that we implement network security to allow a restrict access to the various services and ports so there is which servers allow SSH access or with servers can access what other services on which ports etc 
+	- we can apply such security as a network wide using external firewalls providers such as the Cisco ASA, juniper NGFW, barracuda next gen firewall, Fortinet etc
+	- Using these providers you can define rules that will control any traffic flowing in individual server level using IP tables in the upcoming lecture how to use ufw that stands for uncomplicated firewall using the command line to easily configure to the firewall

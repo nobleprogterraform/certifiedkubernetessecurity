@@ -10,7 +10,7 @@ Pre-requisites
 3. Download the code repository using git clone (or download as zip)
 4. Goto code reposistory directory and run command: vagrant up (this will provision 3 virtual machines named controlplane, node01 and node02)
 5. Verify virtual machines by running command: vagrant status
-6. Login to each virtual machine by running command: vagrant ss controlplane (or vagrant ssh node01 or vagrant ssh node02)
+6. Login to each virtual machine by running command: vagrant ssh controlplane (or vagrant ssh node01 or vagrant ssh node02)
 
 
 7. Cluster Installation:

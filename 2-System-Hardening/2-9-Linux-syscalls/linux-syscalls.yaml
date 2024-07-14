@@ -1,0 +1,19 @@
+-
+
+- In this lecture we will learn about syscalls or system calls and understand what happens under the hood an application or a process runs 
+	- let's start by taking a quick look at how an application or a process runs in Linux and to do that let us first have a quick look at the fundamental concepts of the Linux operating system 
+	- a kernel is the major complement of an operating system and it is the core interface between a computer's hardware and its processes a communicates between the two managing resources as efficiently as possible 
+	- the kernel can be divided into two memory areas known as the kernel space and the user space. applications such as those written in C Java Python for example and processes run by a user are run inside the user space the kernel itself runs inside the kernel space which includes the kernel code, kernel exchange and device drivers 
+	- let us now look at how programs running in the user space work. For example an application wants to open and write data into a file which is stored in memory or disk applications running in user space and get access to data on devices by making special requests with system calls.
+	- For example if you want to create an empty file called error.log in the file system it will make several system calls. one of them is the execve, executes the touch binary.
+	- A few other common examples of other system calls are open close readdire stringlength closedir() etc 
+	- now let's take a look at some of the common ways we can use to trace the spawns used by a process 
+	the first command that we are going to check out is the strace command.  The strace is installed in most limits distributions by default and it is useful to trace these syscalls by an application and the signals written back to it 
+	- for example to inspect the syscalls used when we create a file in the /tmp system simply add the strace command before the touch command 
+	- this command will display a lot of details in its output there
+	- now inspect the first line of this result and understand what it means. These line in this output provides information about the syscalls name, the arguments passed etc. execve is the name of syscall used to execute a program with a specified array of arguments.
+	- the first argument here is the absolute part to the program that we executed which in our case is the touch command 
+	this was followed by an array of strings that are arguments which are passed to the touch command which in this case is the file slash temp slash error.log.
+	-vthe 23 was implies that 23 variables were inherited by the system call 
+	- To trace this calls used by a running process we first need to determine the pid of the process for example to check the pid of the process use the pidof command with the etcd as the argument 
+	- Now use the pid return by this command with the strace -p to attach the process this command will now return all the syscalls made by etcd 

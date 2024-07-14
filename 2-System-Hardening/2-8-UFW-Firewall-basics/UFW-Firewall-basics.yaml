@@ -1,0 +1,20 @@
+
+	-In this lecture we will get introduced to you UFW with stands for uncomplicated firewall. consider a setup where we need to restrict the network access on an Ubuntu server called app-01. This server should only accept SSH connections from a single server with the IP address range 172.16.238.5 This is a server used by the system admins to ssh.  
+	- This machine also runs a web server on port 80 we should also be accessible from the same server and all the internal users connecting from the IP range of 172.16.100.0/208. Besides these requirements all other ports on the server should be closed blocking the inbound access. 
+	- To do this we can make use of the internal packet filtering system available in the Linux Kernel called net filter and one of the common command line tools used to interface with the net filter is IB tables although IP tables is perhaps the most common tool used to configure the Linux firewall. it has a bit of a learning curve for securing the setup that we just discussed 
+	- Let us take a look at ufw it stands for uncomplicated firewall you have a simple front-end interface for IP tables which as the name suggest provides a simple and easy to use interface to send a firewall rules. Before we begin got to node01 and let us run the command (netstat -an | grep -w LISTEN) 
+	- We'll find that the port 22 for SSH and http port 80 are listening. There's another port 8080 which along with all the other ports should be blocked to inbound connections from everywhere else.
+	- To install the ufw tool on the node01 Node first update the packages (apt-get update). 
+	- Next use the (app-get install ufw) command to install the ufw package. Once installed enable and start the ufw service (systemctl enable ufw)
+	- Now let's use ufw to manage firewall rules as per our requirements. Before we begin let us check the status of the firewall by running the ufw status command if you show that the status is currently inactive and this is expected we have not loaded any firewall rules and neither have we enabled the firewall yet 
+	- We will do that once we have added some rules let us first define some default rules on the nod01 Node. We have identified port 80 and 22 to be allowed from two sources.
+	- The outbound connections from node01 server has no restrictions so let us first add a default allow root that allow all outbound connections 
+		ufw default allow outgoing
+	- Let us also add a deny for incoming for all inbound connections. don't worry this will not block any existing connections to put 80 and 22 yet as we have not yet enabled the firewall
+	- Let us add a allowed rule first and then deny on 8080
+		ufw allow from 172.16.238.5 to any port 22 proto tcp (this command allow connection from the IP address 172.16.238.5 to the TCP board 22 on ANY reachable IP address on node01)
+		ufw deny 8080
+	- Once enabled we should be able to check the status of the rules by running the ufw status command 
+	- To delete a specific rule for example to delete the deny 8080 rule that we just added we can use the command 
+		ufw delete deny 8080
+	- Alternatively we can also specify the line number of associated with the rule that we want to delete 

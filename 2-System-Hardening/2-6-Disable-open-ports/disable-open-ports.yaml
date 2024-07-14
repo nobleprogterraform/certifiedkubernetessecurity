@@ -1,0 +1,13 @@
+
+
+
+- In this lecture let us see how to inspect the system for open ports. Once the ports have been identified we will later look at ways to disable them on a Linux host 
+	- early on this lecture we saw how process startup can be managed using systemd services and we learn that just like unwanted packages it's a good idea to disable and remote unwanted services on the Host. several processes when they are started also bind to a port. 
+	- a port is an addressable location in the operating system that allows for the seggregation of network traffic intended for different applications.
+	- for example the tcp port 22 is only used when an SSH server process is standard on machine. to check if a port is used and listening for connection request we can make use of the netstate command (netstat -an | grep -w LISTEN)
+	- so now that we have a list of running ports on the system how do we know what each of them are used for. 
+	one simple way is to check the etc/services file if you are using an Ubuntu based distribution which stores information about several services on the system including the service name the protocol and the port numbers for example if you want to look up what 53, you can check the services file (cat /etc/services | grep -w 53) this shows that the code 53 for TCP and udp is reserved for the domain name server or the DNS
+	- so how do we know which port should be open when installing a new software well the simple answer is to make use of the reference documentation for installing that particular software for example if the cluster is being installed using the cube ADM tool here are all the posts that need to be open for the plus to do a properly this may vary if you decide to use a different kubernetes provider such as ranchor or openshift for example so make sure that you use the appropriate documentation before installing the software once we know which ports are needed disable and block the ones that are not needed in the system
+	- We have a service running on controlplane host which is listening on port 9090. Identify the service and stop the same to free the 9090 port
+		netstat -natp  | grep 9090 (Identify the service listening on port 9090)
+		systemctl stop apache2 (Kill/Stop the service to free the port)

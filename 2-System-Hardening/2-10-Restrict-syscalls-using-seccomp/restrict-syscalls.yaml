@@ -1,0 +1,24 @@
+
+
+
+	- In Last section We saw how applications running in the user space make use of syscalls to request for resources
+	- in this lecture we learn how to allow programs to only make use of syscalls that they absolutely need
+	- in 2016 a CVE vulnerability called dirty cow demonstrated how a program was able to make use of the syscall ptrace to write to a read-only file then gain access to root and then even break out of the container
+	- so how do we restrict applications whether they are directly running on the Host or in a container to only use this cause they actually need to function
+	- by default the Linux Kernel will allow any syscalls by programs running inside the user space which increase the attack surface 
+	- this is where we can make use of seccomp, stands for secure computing and it is a Linux Kernel level feature that can be used to sandbox applications to only use the 
+syscalls they need. Seccomp was first introduced into 2005 and has been part of the Linux Kernel since the version 2.6.12
+	- To check if you have seccomp in kernel run command: grep -i seccomp /boot/config-$(uname -r)
+	- To demonstrate how application security can be fine tuned with seccomp let us first run a simple container using the popular whalesay image from docker: docker run docker/whalesay cowsay hello!
+	- let us run another container using the same image but this time let us exec the container. once in let us attempt to change the system time
+		docker run -it --rm docker/whalesay /bin/sh
+		date -s '19 APR 2000 22:00:00'
+	- if you inspect the process ID we can see that it has a pid of 1. let us inspect the status of this process and specifically look for the seccomp field: ps -ef and then grep Seccomp /proc/1/status (gives value of 2)
+	- value of 2 means that seccomp is implemented on the container seccomp can operate with three modes mode 0,1 and 2
+		0=disabled, 1=Strict, 2=Filtered
+	- docker has a built-in seccomp filter that it uses my default whenever we create a container provided that the Host kernel has a seccomp enabled
+	- let us now take a closer look at seccomp profile json document. the seccomp profile primarily consists of three elements first is the Architecture such as x864 bit and 32 bit which defines which systems the profile can be used for then we have the syscalls in which we can define an array of names and associated action whether to allow or not.
+	- blacklist type profile, a blacklist does the opposite of a white list it allows every syscall by default and rejects those that we have specifically defined inside 
+	- default docker seccomp profile as we saw earlier blocks around 60 of the 300 syscalls on the X86 architecture these includes called such as rebooting system and manipulating the system clock, mounting an unmounting file system creating and deleting modules etc
+	- We can use custom seccomp profile by updating default seccomp profile and save in seprate custom.json
+		docker run -it --rm --security-opt seccomp=/root/custom.json \ docker/whalesay /bin/bash
