@@ -1,0 +1,83 @@
+
+# Ingress resource
+apiVersion: v1
+items:
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    name: ingress-wear-watch
+    namespace: app-space
+  spec:
+    rules:
+    - http:
+        paths:
+        - backend:
+            service:
+              name: wear-service
+              port:
+                number: 8080
+          path: /wear
+          pathType: Prefix
+        - backend:
+            service:
+              name: video-service
+              port:
+                number: 8080
+          path: /watch
+          pathType: Prefix
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 10.104.208.86
+kind: List
+metadata:
+  resourceVersion: ""
+
+# service to expose ingnix contorller on nodeport
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.1.2
+    helm.sh/chart: ingress-nginx-4.0.18
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  clusterIP: 10.104.208.86
+  clusterIPs:
+  - 10.104.208.86
+  externalTrafficPolicy: Local
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - appProtocol: http
+    name: http
+    nodePort: 30080
+    port: 80
+    protocol: TCP
+    targetPort: http
+  - appProtocol: https
+    name: https
+    nodePort: 32103
+    port: 443
+    protocol: TCP
+    targetPort: https
+  selector:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+  sessionAffinity: None
+  type: NodePort
+status:
+  loadBalancer: {}
+

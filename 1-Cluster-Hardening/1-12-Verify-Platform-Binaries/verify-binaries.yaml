@@ -1,0 +1,11 @@
+	- Download kubernetes source code binaries in /opt folder 
+		Go to https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.30.md#v1302 where download link and checksum are there
+		wget -O /opt/kubernetes.tar.gz https://dl.k8s.io/v1.30.0/kubernetes.tar.gz
+	- Verfiy checksum of downloaded binaries:
+		sha512sum /opt/kubernetes.tar.gz
+
+
+
+	- In this lecture we look at how to verify platform binaries before deploying a cluster. the kubernetes platform binaries are available at the kubernetes github release page it is important to verify that the downloaded binaries are safe to use by comparing against the checksum hash found against each binary within this page.
+	- so these binaries are served on the internet so when you download the binaries they are downloaded from the hosted servers to your system now it is possible that an attacker who may have gained access to either your network or somewhere in between and intercept your download request and return his own version of the file which may contain malicious code this may go unnoticed if the downloaded file is not verified against the checksum. 
+	- we use the shasum command line utility to generate our own hash of the downloaded file we then verify the output of our command against the one that is available in the release page 
