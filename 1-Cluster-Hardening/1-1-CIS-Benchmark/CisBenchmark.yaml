@@ -1,4 +1,25 @@
-one of the most commonly used tool is the CIS a benchmarking tool so CIS stands for the center for internet 
-security and it is a community-driven non-profit organization whose mission is to make the connected world 
-is safer place by developing validating and promoting timely best practice Solutions that help people
- businesses and governments protect themselves against pervasive cyber threats
+2.1 CIS benchmark
+	- Let's start by understanding what a security benchmark is. For eg. here I have a Linux system Ubuntu and I just deployed it as a fresh operating system on a server in my data center before we host our production grade applications on the system it is important that we secure it with respect to security. 
+	- There are so many ways the system is vulnerable to attacks for example someone who sneaks into the data center can attach a USB drive to the server and in fact the server with virus or malware and so USB ports or peripheral slots on the server
+	- from an access perspective what user accounts are to be configured and which users have access to the system and users login as root and what if an admin logs in as root and performs changes that impacts the server you wouldn't know which user did that instead security best practices recommend that the root user must be disabled and only allow admins to log in using their own account and you sudo to elevate their permission levels if required
+	- there are network related best practices such as to configure firewall or IP tables to open up only required ports from and to specific IP addresses 
+	- From Services perspective we must make sure that only necessary services are enabled such as ntp service for times synchronization and all other services are that are not required on the server are to be disabled 
+	- From a file system standpoint we must ensure that the right permissions are set for files and unused file systems are disabled and 
+	- we must make sure to configure auditing and logging on the system to make sure all changes are logged for auditing purposes 
+	
+	- so where are these best practices available and how can we and how can we see where our server stands with respect to implementing these best practices
+	- There are many tools available to access our servers and and one of the most commonly used tool is the CIS a benchmarking tool so CIS stands for the center for internet security and it is a community-driven non-profit organization whose mission is to make the connected world is safer place by developing validating and promoting timely best practice Solutions that help people businesses and governments protect themselves against pervasive cyber threats
+	- The CIS website provides cyber security benchmarks for over 25 different vendors that include operating systems like Linux Windows Mac OS public cloud platforms like Google and others mobile platform, network devices, desktop software  and server software like different web servers like Tomcat as well as those that fall into the virtualization category such as vmwere, docker and kubernetes
+	- You can register at the CIS website and download CIS benchmarks for the necessary components of your choice. these benchmarks are pages of instructions of various security recommendations which includes the commands that you must run as well and how to remediate the same 
+	- Now not only does CIS publish best practices they also provide necessary tools that can help run assessments and remediate them as well 
+	- So the CIS cat tools help in automated assessment of the server it compares the current configuration on the server against the recommended security best practices in the benchmark document and reports issues if any of our found
+	
+	Run CIS Benchmark Assessment tool on Ubuntu
+	Download CIS-CAT lite tool by registring on cisbenchmark website, extract the zip file and copy the Assesor folder in Downloads and open Downloads 
+	in termal 
+	Java is not installed by default, 
+	sudo apt update
+	sudo apt install default-jre 
+	sudo sh ./Assessor-CLI.sh -i -rd /var/www/html -nts -i -rp index 
+	Benchmarks/Data-Stream Collections: : CIS Ubuntu Linux 22.04 LTS Benchmark v2.0.1
+	Profile : Level 1 - Server

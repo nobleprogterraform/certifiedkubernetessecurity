@@ -1,3 +1,11 @@
+2.2 CIS Benchmark for Kubernetes
+	- As we discussed in the previous lecture the CIS website provides cyber security benchmarks for a number of different vendors and the server software of our interest happens to be kubernetes 
+	- https://www.cisecurity.org/benchmark/kubernetes register at the CIS website and download the CIS benchmarks for kubernetes the latest one as of this recording provides best practices for kubernetes and is intended for system and application administrators security specialists auditors and others who plan to develop deploy assets or secure Solutions with kubernetes
+2.2 Kube-bench
+	- In this lecture we will look at evaluating cis benchmark for kubernetes using the Kube bench tool 
+	The kube bench tool is an open source tool from aqua security that can perform automated assessments to check whether kubernetes is deployed as per security best practices so in the previous lecture we saw the list of recommended best practices from CIS for kubernetes and that is shown here on the left and on the right is the output from The kube bench tool as you can see each of the recommendations on the left and matches the results on the right
+	- There are different ways to deploy and get started with kube bench. it may be deployed as a docker container or as a job on a kubernetes cluster or just as binaries or compiled from Source Code and the upcoming Labs you will identify a stable version of cube bench from github installed it on a master node run and assessment and review its results 
+
 1. Install kube bench in /root directory
   Login to controlplane node
   curl -L https://github.com/aquasecurity/kube-bench/releases/download/v0.4.0/kube-bench_0.4.0_linux_amd64.tar.gz -o kube-bench_0.4.0_linux_amd64.tar.gz

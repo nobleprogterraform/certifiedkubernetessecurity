@@ -1,4 +1,59 @@
 
+- in this lecture we will discuss about ingress in kubernetes one of the common questions that students reach out about easily is regarding services and ingress
+	- ingress helps your users access your application using a single externally accessible URL that you can configure to route to different services within your cluster based on the URL pod at the same time implement SSL security as well
+	- Simply put think of ingress as a layer of load balancer built in to the kubernetes cluster that can be configured using native cloud primitives just like any other object in kubernetes
+	- with ingress you still need to expose it to make it accessible outside the cluster so you still have to either publish it as a nodeport or with a cloud native load balancer but that is just a one-time configuration going forward you're going to perform all your low balancing, authentication, SSL and url-based routing configurations on the ingress controller
+	- Without ingress how would you do all of this I would use a load balancing solution like nginx or ha proxy or traefik.
+	I would deploy them on a kubernetes cluster and configure them to route traffic to other services. The configuration involves defining URL routes and SSL certificates ETC. 
+	Its implemented by kubernetes in kind of the same way you first deploy a supported solution which happens to be any of these listed here and then specify a set of Rules to configure ingress. The solution you deploy is called as an ingress controller and the set of Rules you can figure are called as ingress resources. Ingress resources are created using the definition files like the ones we used to create pods, deployments
+	- Remember a kubernet cluster does not come with an ingress controller by default so if you simply create in ingress resources and expect them to work they won't. so you must deploy ingress controller.There are a number of Solutions available for ingress eg GCE, Nginx, Contour, HAProxy etc
+	- Out of this GCE and nginx are currently supported and maintained by the kubernetes project and in this lecture we will use nginx as an example
+	- nginx controller is deployed as just another deployment in kubernetes so we start with a deployment definition file
+	- we then need a service to expose the ingress controller to the external world so we create a service of type nodeport 
+	- The ingress controllers have additional intelligence built into them to monitor the kubernetes cluster for ingress resources and configure the underlying nginx server when something is changed but for the ingress controller to do this it requires a service account with the right set of permissions for that we create a service account with a correct roles and role bindings
+	- Now on to the next part of creating ingress resources. ingress resource is a set of rules and configurations applied on the ingress controller you can configure rules to say simply forward all incoming traffic to a single application or route traffic to different applications based on the URL so if a user goes to my onlinestore.com/wear then route to one of the applications or if the user visits the /Watch URL then route to the video app etc or you could route users based on the domain name itself for example if the user visits wear.my-onlinestore.com then route the user to the wear application or else wrote him to be video app
+	- Within ingress resource definition, you use rules when you want to route traffic based on different conditions eg paths or domain hosts 
+	- kubectl get ingress -n app-space
+  
+	- apiVersion: v1
+	items:
+	- apiVersion: networking.k8s.io/v1
+	  kind: Ingress
+	  metadata:
+		annotations:
+		  nginx.ingress.kubernetes.io/rewrite-target: /
+		  nginx.ingress.kubernetes.io/ssl-redirect: "false"
+		name: ingress-wear-watch
+		namespace: app-space
+	  spec:
+		rules:
+		- http:
+			paths:
+			- backend:
+				service:
+				  name: wear-service
+				  port:
+					number: 8080
+			  path: /wear
+			  pathType: Prefix
+			- backend:
+				service:
+				  name: video-service
+				  port:
+					number: 8080
+			  path: /watch
+			  pathType: Prefix
+	  status:
+		loadBalancer:
+		  ingress:
+		  - ip: 10.104.208.86
+	kind: List
+	metadata:
+	  resourceVersion: ""
+	- kubectl get ingress -n app-space ingress-wear-watch
+	  kubectl edit ingress -n app-space ingress-wear-watch
+
+
 # Ingress resource
 apiVersion: v1
 items:
