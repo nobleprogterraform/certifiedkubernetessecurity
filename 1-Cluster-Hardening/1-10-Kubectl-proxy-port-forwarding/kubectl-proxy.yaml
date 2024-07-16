@@ -1,14 +1,23 @@
-
+	Copy content of ./.kube/config to home diretory on host at location .kube/config
+	verify kubectl get pods -A
+	
+		
 		kubectl proxy --api-prefix=/
 		http://localhost:8001/api/v1/pods /apis/apps/v1/deployments
 
+
+		kubectl run nginx-pod --image=nginx --restart=Never --port=80 -n default
+		kubectl expose pod nginx-pod --type=NodePort --port=80 --name=nginx-service
+		http://node01_ip:30368 on host machine 
+
+		kubectl port-forward service/nginx-service 8005:80
+		on host machine: http://localhost:8005
 
 - In this lecture we will take a look at the kubectl proxy in a bit more detail. we can use the kubectl utility to interact with the kubernetes API server and when doing so we don't need to provide any authentication mechanism in the command line because we can figure it in the kube config file on our system. we learned that kube config file has been necessary user details and credentials in it to access and interact with the kubernetes clusters through the API server
 	- now the kubectl utility could be anywhere it may be on the same host as the master node in the kubernetes cluster,it may be elsewhere say on our laptop so the cluster could be within a VM on my laptop or on a private server in the environment or a server on public cloud environment or it could be from some managed kubernetes service provider and no matter where the cluster is hosted you can manage it locally using the cube kubectl utility from your laptop as long as you have valid kube config file.
 	- We also discussed that another way to interact with the kubernetes API server is through the port 6443 using curl.so say if you were to access the API server directly through using curl (curl https://localhost:6443/api/v1/pods) then you will not be allowed access as you have not specified any mean authentication mechanisms so you have to authenticate to the API server using your certificate files by passing them in the command line.
 	- Alternative option is start the kubectl proxy server.The kubectl proxy client launches a proxy service locally on port 8001 by default and uses the credentials and certificates from your kube config file to access the cluster. that way you don't have to specify those in the curl command when you try to access the API server but now when you access the kubectl process service on localhost and 48,001 the proxy will use the credentials from the cubeconfig file stored on your local computer and forward your request to the kube API server and this will list all available apis and route so this is an alternate way of accessing
 	- remember that the proxy runs only on your laptop and if only accessible within your laptop
-	- what else can you do with this proxy, you can make any kind of API request to the apis server with this and you can proxy request through any service that's running within cluster. Say for example we have an nginx pod exposed with an nginx service but say for some security reason we have not exposed it to outside of the cluster through a node port or a load balancers. the nginx service is a cluster IP type service and that's only accessible within the cluster now what if you want to read that nginx service from your laptop as an administrator the only way to do that would be to expose it as a load balancer for but you don't want to do that so one option to to access that particular service that's running within the cluster again using these kubectl proxy. you can access the kubectl curl proxy URL and then forms a URL through your kubectl proxy at on port 8001 that is to the /api/v1/namespaces/default/services and then the name of the service that you would like to access followed by the keyword proxy or the path in this way you will be able to access services within your clusters through the kubectl proxy that running on your laptop as if cluster and the services are just running locally on your laptop
 	- Another option to access the service is to configure a port forward. now with kubectl you could forward a port from your laptop to port on a service within the kubernetes cluster. the kubectl port forward command takes a pod,deployment or replicas that are service as an argument in this case the service nginx is what we want to forward traffic to and then we specify a port on our host which is 28080 and that is forwarded to 80 on the service which is the service running within a kubernetes cluster, so now to access the service running on the remote cluster we can just do a curl to localhost to 28080 and any request to that particular port is going to be forwarded to the service running within the kubernetes cluster so we can use this approach to access any service at this hosted within cluster as if you are running them on laptop
 		kubectl proxy --api-prefix=/
 		http://localhost:8001/api/v1/pods /apis/apps/v1/deployments

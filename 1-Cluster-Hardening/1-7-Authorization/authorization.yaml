@@ -1,0 +1,32 @@
+- As an admin, we are able to perform any operation but soon we will have others accessing the cluster as well
+		such as the other administrators,developers,testers or other applications like monitoring applications or continuous delivery 
+		applications like Jenkins, et cetera. But we don't want all of them to have the same level of access as us.
+		When we share our cluster between different organizations or teams, by logically partitioning it using name spaces,
+		we want to restrict access to the users to their name spaces alone. That is what authorization can help you within the cluster
+	- There are different authorization mechanisms supported by Kubernetes, such as node authorization,
+		attribute-based authorization, role-based authorization and webhook
+	- Node Authorizer: We know that the Kube API Server is accessed by users like us for management purposes, as well as the kubelets on node
+		within the cluster for management process within the cluster. The kubelet accesses the API server to read information about services and 
+		nodes, and pods.The kubelet also reports to the Kube API Server with information about the node, such as its status
+		These requests are handled by a special authorizer known as the Node Authorizer
+		We know that kubelets should be part of the system nodes group and have a name prefixed with system node. So any request coming from a user
+		with the name system node and part of the system nodes group is authorized by the node authorizer.So that's access within the cluster
+	- Attribute-based authorization: is where you associate a user or a group of users with a set of permissions.
+		In this case, we say the dev user can view, create and delete pods.You do this by creating a policy file with a set of policies defined 
+		in adjacent format this way you pass this file into the API server.
+		{"kind":"Policy","spec":{"user":"dev-user","namespace":"*", "resource":"pods", "apiGroup":"*"}}
+		every time you need to add or make a change in the security, you must edit this policy file manually and restart the Kube API Server.
+		So attribute based authorization is difficult to manage.
+	- Role-based access controls make these much easier: .instead of directly associating a user or a group with a set of permissions,
+		we define a role, in this case for developers. We create a role with the set of permissions required for developers
+		then we associate all the developers to that role. If a change is made to role all developers with role will be updated.
+	- Webhooks: if you want to outsource all the authorization mechanisms? Say you want to manage authorization externally
+		and not through the built-in mechanisms that we just discussed. For instance, Open Policy Agent is a third-party tool
+		that helps with admission control and authorization. You can have Kubernetes make an API call to the Open Policy Agent with the information
+		about the user and his access requirements, and have the Open Policy Agent decide if the user should be permitted or not.
+		Based on that response, the user is granted access.
+	- In addition to above 4, there are 2 more modes name as Always Allow and Always Deny.
+	- So, where do you configure these modes. The modes are set using the Authorization Mode Option on the Kube API Server. Always Allow is default
+		--authorization-mode=AllwaysAllow
+		You may provide a comma separated list of multiple modes that you wish to use eg --authorization-mode=Node,RBAC,Webhook
+		your request is authorized using each one in the order it is specified, until its authorization is granted.

@@ -31,7 +31,7 @@ roleRef:
 	or cluster-scoped resources. So the resources are categorized as either namespaced or cluster-scoped.
 - Example of namespaced resources: Pods, Replicasets, deployments, services, secrets, roles, rolebindings,configmaps
 - Example of cluster scoped resources: nodes, persistent volumes, clusterroles, clusterrolebindings, certificatesigningrequests,namespaces
-- To see a full list of namespaced and cluster scoped resources run: kubectl api-resources --namspaced=true/false
+- To see a full list of namespaced and cluster scoped resources run: kubectl api-resources --namespaced=true/false
 - How do we authorize users to cluster-wide resources like nodes. That is where you use cluster roles and cluster role bindings
 - Creating a cluster role using definition file
 	

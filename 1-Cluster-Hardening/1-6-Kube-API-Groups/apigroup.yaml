@@ -10,7 +10,7 @@ Kubernetes API Groups
 - The Kubernetes API is grouped into multiple such groups based on their purpose such as 
 	/metrics /healthz /version /api /apis /logs
 	metrics and health are used to monitor health of cluster, The logs are used for integrating with third-party logging applications
-- In this video, we will focus on the APIs responsible for the cluster functionality. which are /api and /apis
+- In this section, we will focus on the APIs responsible for the cluster functionality. which are /api and /apis
 	/api is called core group and /apis is called named group. The core group is where all core functionality exists
 	/api/v1/ (namespaces, pods,nodes,services,configmaps,bindings,endpoints,events,rc,pv,secrets etc)
 - /apis The named group APIs are more organized and going forward, all the newer features are going to be made available through 
