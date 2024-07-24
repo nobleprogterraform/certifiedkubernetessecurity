@@ -5,6 +5,8 @@
 	- the baggage employees have the privilege to inspect the belongings of a traveler. usually their access is restricted to the security area but of course they can also access the public spaces of the airport.
 	- the store employees may have additional access to the back room of the store and of course besides the store itself they also have access to the public spaces of the airport
 	- As you can see every user has minimum privileges to carry out their job allows for an efficient and secure operation of this Airport
+	
+	
 	This is the Foundation of the least privilege principle at the same can be applied to any computer system including the Linux operating system as well as to secure our kubernetes infrastructure.
 	we can use the same principle of least privilege so that systems include nodes or software running on them and workloads only have the Bare minimum access such as limiting users and accounts that can use the cluster
 	- Apart from users we can also secure env by Making sure that only the required software is installed on the Host.

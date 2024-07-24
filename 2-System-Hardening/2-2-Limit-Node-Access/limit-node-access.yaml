@@ -6,8 +6,8 @@
 	- groupdel devs
 	
 	- Create a user named sam on the controlplane host. The user's home directory must be /opt/sam. Login shell must be /bin/bash and uid must be 2328. Make sam a member of the admin group.
-		useradd -d /opt/sam -s /bin/bash -G admin -u 2328 sam
-  
+		sudo useradd -d /opt/sam -s /bin/bash -G admin -u 2328 sam
+		sudo passwd sam
   
   - In this sesssion we will see how we can minimize the attack surface by limiting the access to the host. in the early section we learned about the different ways a user can access a kubernetes cluster such as using ABAC and RBAC but what about accessing the nodes themselves. 
 	As a standard practice we should limit exposure of the controlplane and worker nodes to the internet. 
@@ -19,6 +19,7 @@
 	a superhero account is the root which has the uid of zero the super user has unrestricted access and control over the system including other users.
 	system accounts are typically created during the os installation these are for the use by software and services.
 	service accounts are similar to the system accounts and are created when services are installed in Linux for example an nginx service that makes use of a service account for nginx to see details about users.
+	
 	- we can make use of some very simple commands. 
 	- the ID command gives information about the users specifically the uid Gid and what other groups the user as part of 
 	- who command is used to see the list of users currently logged into the system 

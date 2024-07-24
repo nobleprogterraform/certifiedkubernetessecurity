@@ -15,7 +15,7 @@
 	- Create a user named jim on node01 host and configure password-less ssh access from controlplane host (from user root) to node01 host (to user jim).
 	ssh node01
 	adduser jim
-	ssh-copy-id -i ~/.ssh/id_rsa.pub jim@node01 (keys already created, from controlplane node)
+	ssh-copy-id -i id_rsa.pub jim@node01 (keys already created, from controlplane node)
 	ssh jim@node01
 	
 	Disable ssh root login and disable password authentication for ssh on node01 host.

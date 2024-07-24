@@ -1,0 +1,33 @@
+- In this lecture we will learn about apparmor and see how it can be used to further restrict an application capabilities
+- in the previous lecture we learned about seccomp profiles and so how they can be used in kubernetes to restrict syscalls for a pod. 
+- Although we can make use of seccomp effectively restrict which syscalls container can or cannot use, we cannot use it to restrict a programs access to specific objects such as a file or a directory
+- let us use the same example that we use in the seccomp lecture by restricting the mkdirs syscall
+- Using a custom profile we can effectively prevent the container from creating directories inside it however how do we limit the container to say prevent writing to a file system or a specific directory 
+- To implement such fine grain control over the processes running inside of container we have to make use of apparmor 
+- AppArmor ("Application Armor") is a Linux kernel security module that allows the system administrator to restrict programs' capabilities with per-program profiles. Profiles can allow capabilities like network access, raw socket access, and the permission to read, write, or execute files on matching paths.
+- AppArmor is installed by default on the most Linux distribution.
+systemctl status apparmor
+
+- To make use of app armor the apparmor kernel module must first be loaded on all the nodes where the container would run this can be verified by cat /sys/module/apparmor/parameters/enabled with Y value
+- app armor is applied to an application via a profile this profile which will take a look in a minute must be loaded into the kernel and this can be verified by cat /sys/kernel/security/apparmor/profiles
+
+- app armor profiles are simple textiles that define what resources can be used by an application eg capabilities, resources file resources etc 
+for example a profile that restricts all file writes within a file system can be defined like this 
+
+this simple profile called app-armor-deny-write contains two rules the first rule here is file which is a short hand for allow access,  this rule allows complete access to the entire file system next we have the denial this prevents write access to all files on the root file system including the subdirectories this basically implies to all writes to the entire file system 
+profile apparmor-deny-write flags=(attach_disconnected) {
+  file,
+  deny /** w,
+}
+let's use another example if you only want to restrict writes to be files directly under the slash proc file system we can use a denial rule like this
+profile apparmor-deny-proc-write flags=(attach_disconnected) {
+  file,
+  deny /proc/* w,
+}
+
+- The app armor profiles that are loaded and the status can be checked using the aa-status command 
+Apparmor Profiles can be loaded in three different modes
+enforce complain and unconfined 
+with enforce mode app rmor will monitor and enforce the rules that we just saw on any application that fits profile 
+when a profile is in a complaint mode apparoor will allow the application to perform tasks without any restriction but it will then log them as events
+finally the unconfined mode as the name suggests allows application to perform any tasks but in this case apparmor does not log it as events

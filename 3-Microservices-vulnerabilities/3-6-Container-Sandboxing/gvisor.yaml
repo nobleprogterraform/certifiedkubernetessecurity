@@ -1,0 +1,16 @@
+- in the previous lecture we talked about how we can make use of blacklist and whitelist rules the tools such as seccomp and app-armor to allow and deny certain actions that can be done by containers but we have to remember that our whole problem here in multitenen environments is not actually what an app can or can not do, the core problem is that they all interact pretty much directly with the same operating system and especially the same kernel
+
+- So what we actually want is a way to improve isolation between container and the operating system of the kernel 
+what if we could isolate a container further and restrict it from making direct system calls to the Linux Kernel.
+Instead what if we had an additional layer of protection between the container and the operating system kernel
+- well gVisor is a tool from Google that allows an additional layer of isolation between the container and  kenrel.
+we will learn how to implement it in the upcoming lectures but for now let's focus on how it works when a program in a container wants to make a system call to the Linux 
+it's actually making a call to gvisor now but how does this additional layer help improve the container isolation.
+Sandbox consists of two major companies that work together to achieve stronger isolation when compared to traditional containers the first component is Sentry and it can be described as an independent application level kernel which is dedicated for containers
+The main purpose of Sentry is to intercept and respond to system calls which are made by containerized application
+Sentry is designed with containers in mind so it supports far fewer functionality than the actual kernel.
+This reduces the possibilities of flaws that can be exploited by attackers for example if the application needs access to a file, Sentry cannot make the access system call directly on kernel instead Sentry talks to a dedicated process called Gofer. Gofer is a file proxy that implements the logic that is needed for containerized apps to access the system file so again this is like a Middleman which is sitting in between the container and the operating system and guarding against any potential abuse 
+similarly for network operations gvisor again makes use of its own Netflix stack just like the previous measures this makes sure that the network operations can be done without containers directly interacting with the operating systems network code enhancing the isolation 
+the most important take here is that it's not just one single g-visor kernel that serves all the containers. Each containerized environment has its own dedicated device kernel acting as the middleman between the application and the Linux Kernel.
+This means that each container would now be isolated in its own virtualized sandbox which drastically reduces the attack surface even if this Middleman fails in some way if it should happen that a gvisor instance breaks in one container all the other ones will continue to run without any issues 
+but as mentioned earlier every security measure has its price to pay in this case the price of a gvisor is that not all apps will work with it you will just have to test each one of your application and see for yourself and also it will make applications slightly slower as all syscalls go through the middleman

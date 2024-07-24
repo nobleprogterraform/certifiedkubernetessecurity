@@ -1,0 +1,76 @@
+- Open Policy agent comes into picture after authenication is done and authorization is yet to be done. 
+- First of all lets consider a simple scenario where we will see how can do authorization without OPA. 
+  Lets say a user performs an action which needs to be authorize, let see a sudo code to see how can do it 
+  This is most simple implementation where we are simply checking incoming user to be a predefined username.
+- It can get to really complex scenario where you have hundreds of services talking to each other and you have 
+  several roles and group for accessing different resources in your services.
+- So in order to manage authorization efficiently, you deploy OPA in your environment, you define policies in opa
+  and your services talk to OPA to perform authorization against the pre defined policies.
+- OPA is an open source, general-purpose policy engine that unifies policy enforcement across the stack. OPA provides a high-level declarative language that lets you specify policy as code and simple APIs to offload policy decision-making from your software. You can use OPA to enforce policies in microservices, Kubernetes, CI/CD pipelines, API gateways, and more.
+
+- First step is to install OPA
+curl -L -o opa https://github.com/open-policy-agent/opa/releases/download/v0.27.1/opa_linux_amd64
+chmod 755 ./opa
+./opa run -s & (-s for running OPA as server, by default authorization is disabled but there are options to enable)
+
+- Second step is to create policies and load it in OPA
+Rego is the language used to write policies in OPA
+vi sample.rego
+package httpapi.authz
+import input
+default allow = false 
+allow {
+input.path == "home"
+input.user == "Kedar"
+}
+
+Run Below command to import sample.rego in OPA
+$ curl -X PUT --data-binary @sample.rego http://localhost:8181/v1/policies/samplepolicy
+To view all existing policies
+curl http://localhost:8181/v1/policies
+
+
+
+-----OPA in Kubernetes-----------
+cat untrusted-registry.rego 
+package kubernetes.admission
+
+deny[msg] {
+  input.request.kind.kind == "Pod"
+  image := input.request.object.spec.containers[_].image
+  not startswith(image, "hooli.com/")
+  msg := sprintf("image '%v' comes from untrusted registry", [image])
+}
+
+cat unique-host.rego 
+package kubernetes.admission
+import data.kubernetes.ingresses
+
+deny[msg] {
+    some other_ns, other_ingress
+    input.request.kind.kind == "Ingress"
+    input.request.operation == "CREATE"
+    host := input.request.object.spec.rules[_].host
+    ingress := ingresses[other_ns][other_ingress]
+    other_ns != input.request.namespace
+    ingress.spec.rules[_].host == host
+    msg := sprintf("invalid ingress host %q (conflicts with %v/%v)", [host, other_ns, other_ingress])
+}
+
+cat test.yaml 
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test
+spec:
+  containers:
+  - image: nginx
+    name: nginx-frontend
+  - image: hooli.com/mysql
+    name: mysql-backend
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: root
+  
+  kubectl create configmap untrusted-registry --from-file=untrusted-registry.rego
+  

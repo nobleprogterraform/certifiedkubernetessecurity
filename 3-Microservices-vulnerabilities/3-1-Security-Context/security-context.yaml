@@ -1,0 +1,63 @@
+- We saw in the previous lectures when you run a docker container you have the option to define a set of securities standards such as the ID of the user used to run the container (docker run --user=1001 ubuntu sleep 3600), the Linux capabilities that can be added or removed from the container (docker run --cap-add MAC_ADMIN ubuntu) etc these can be configured in kubernetes as well
+
+docker run --user=1001 ubuntu sleep 3600
+docker run -cap-add MAC_ADMIN ubuntu
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-pod
+spec:
+  securityContext:
+    runAsUser: 1000
+  containers:
+  - name: ubuntu
+    image: ubuntu
+    command: ["sleep", "3600"]
+
+- as you know already in kubernetes containers are encapsulated in pods. you may choose to configure the security settings at a container level or at a pod level if you configure it at a pod level the settings will carry over to all the containers within the pod if you configure it at both the pod and the container the settings on the container will overwrite the settings on the pod
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-pod
+spec:
+  containers:
+  - name: ubuntu
+    image: ubuntu
+    command: ["sleep", "3600"]
+    securityContext:
+      runAsUser: 1000
+
+- To add capabilities use the capabilities option
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-pod
+spec:
+  containers:
+  - name: ubuntu
+    image: ubuntu
+    command: ["sleep", "3600"]
+    securityContext:
+      runAsUser: 1000
+      capabilities:
+        add: ["MAC_ADMIN"]
+
+- Add SYS_TIME capability to the container's securityContext
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-pod
+spec:
+  containers:
+  - name: ubuntu
+    image: ubuntu
+    command: ["sleep", "3600"]
+    securityContext:
+      capabilities:
+        add: ["SYS_TIME"]
+
+  $ kubectl exec -it ubuntu-sleeper -- date -s '19 APR 2012 11:14:00'

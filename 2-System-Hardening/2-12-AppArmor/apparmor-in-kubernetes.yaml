@@ -1,0 +1,50 @@
+1. Create app armor profile named k8s-apparmor-example-deny-write
+#include <tunables/global>
+
+profile k8s-apparmor-example-deny-write flags=(attach_disconnected) {
+  #include <abstractions/base>
+
+  file,
+
+  # Deny all file writes.
+  deny /** w,
+}
+
+2. Load apparmor profile in all cluster nodes
+
+sudo apparmor_parser -q <<EOF
+#include <tunables/global>
+
+profile k8s-apparmor-example-deny-write flags=(attach_disconnected) {
+  #include <abstractions/base>
+
+  file,
+
+  # Deny all file writes.
+  deny /** w,
+}
+EOF
+
+3. Next, run a simple "Hello AppArmor" Pod with the deny-write profile:
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-apparmor
+spec:
+  securityContext:
+    appArmorProfile:
+      type: Localhost
+      localhostProfile: k8s-apparmor-example-deny-write
+  containers:
+  - name: hello
+    image: busybox:1.28
+    command: [ "sh", "-c", "echo 'Hello AppArmor!' && sleep 1h" ]
+
+kubectl create -f hello-apparmor.yaml
+You can verify that the container is actually running with that profile by checking /proc/1/attr/current:
+
+kubectl exec hello-apparmor -- cat /proc/1/attr/current
+
+4. Finally, you can see what happens if you violate the profile by writing to a file:
+
+kubectl exec hello-apparmor -- touch /tmp/test

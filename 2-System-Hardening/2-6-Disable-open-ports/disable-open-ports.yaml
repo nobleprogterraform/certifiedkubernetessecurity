@@ -1,5 +1,5 @@
 
-
+sudo apt install net-tools
 
 - In this lecture let us see how to inspect the system for open ports. Once the ports have been identified we will later look at ways to disable them on a Linux host 
 	- early on this lecture we saw how process startup can be managed using systemd services and we learn that just like unwanted packages it's a good idea to disable and remote unwanted services on the Host. several processes when they are started also bind to a port. 

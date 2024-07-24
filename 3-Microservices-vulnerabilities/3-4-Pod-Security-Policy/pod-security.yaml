@@ -1,0 +1,73 @@
+-  there are two promising options available to meet the pod security:
+1. Policy-as-code (PAC) solutions within the Kubernetes ecosystem.
+2. The Kubernetes Pod Security Standards (PSS) with Pod Security Admission (PSA)
+
+In the Kubernetes community, several open source PAC solutions have emerged, providing a reliable alternative to PSPs. These solutions, although not officially part of the Kubernetes project, can be obtained from the Kubernetes ecosystem. Some notable examples of PAC solutions include:
+
+Kyverno
+OPA/Gatekeeper
+Open Policy Agent (OPA)
+jsPolicy
+
+Pod Security Admission (PSA) and Kubernetes Pod Security Standards (PSS):
+PSA is an integrated solution within Kubernetes that offers built-in capabilities for governing pod security. The solution incorporates a webhook project designed for admission controllers, which ensures enforcement of the controls outlined in the Pod Security Standards (PSS). This admission controller approach bears similarity to the functioning of PAC (Policy as Code) systems.
+
+Bit about Pod Security Standards(PSS):
+PSS defines three different security policies that cover a wide range of security needs. These policies are cumulative and vary in their level of restrictiveness:
+Privileged: This policy grants the highest level of access without any restrictions. It is useful for system-wide programs like logging agents, CNIs, and storage drivers that require privileged access.
+Baseline: This policy aims to be highly restrictive to prevent known privilege escalation while still allowing the use of the default Pod configuration with minimal alterations. The baseline policy imposes restrictions on specific capabilities, including hostNetwork, hostPID, hostIPC, hostPath, hostPort, and the addition of Linux capabilities.
+Restricted: This strict policy follows current best practices for hardening Pods. It builds upon the baseline policy and adds additional constraints, such as prohibiting the Pod from running as the root user or in the root group. Restricted policies may affect the functionality of applications and are designed for running security-critical applications. Read more about PSS in the official Kubernetes documentation https://kubernetes.io/docs/concepts/security/pod-security-standards/
+
+Pod Security Admission(PSA) operates in three modes to enforce the controls defined by PSS:
+Enforce: When this mode is enabled, the PSA evaluates the Pod against the policy. If the Pod fails to meet the policy requirements, it is rejected.
+Audit: In this mode, the Pod is allowed to run even if it violates the policy. However, the violation is recorded in the Kubernetes audit log.
+Warn: This mode generates a warning for any policy violation but does not prevent the Pod from running.
+
+Let’s Understand Namespace Labels in PSA:
+Namespace labels play a crucial role in implementing PSA. They determine the policy level that applies to all Pods within a specific namespace. Here’s how they work
+First, Label Key: The key used for labeling namespaces is pod-security.kubernetes.io/enforce, pod-security.kubernetes.io/audit, and pod-security.kubernetes.io/warn.
+Then, Label Value: The value of these labels indicates the policy level to be enforced, audited, or warned. These levels are typically privileged, baseline, or restricted, aligning with the Pod Security Standards.
+
+Lab1:
+We want to apply pod security on namespace alpha. To achieve that, add the following label to the namespace alpha
+kubectl label ns alpha pod-security.kubernetes.io/warn=baseline
+
+Lab2:
+kubectl label ns alpha pod-security.kubernetes.io/warn=baseline
+apiVersion: v1
+kind: Pod
+metadata:
+  name: baseline-pod
+  namespace: alpha
+spec:
+  containers:
+  - image: nginx
+    name: baseline-pod
+    securityContext:
+       privileged: true
+
+Lab3: Multi PSA
+kubectl label ns beta \
+pod-security.kubernetes.io/enforce=baseline \
+pod-security.kubernetes.io/warn=restricted	
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-psa
+  namespace: beta
+spec:
+  containers:
+  - name: multi-psa
+    image: nginx
+    securityContext:
+      runAsUser: 0
+
+
+Lab: How can a cluster administrator specify the configuration file path for the admission configuration resource in the API server?
+In a Kubernetes cluster, the cluster administrator can specify the configuration file path for the admission configuration resource in the API server using the --admission-control-config-file flag.
+This flag allows administrators to provide a file path that contains the configuration for admission controllers
+Bear in mind that this file is in the API server pod's file system, therefore you must mount it as a hostPath or configmap volume
+Refernce: https://kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-admission-controller/
+
+
+

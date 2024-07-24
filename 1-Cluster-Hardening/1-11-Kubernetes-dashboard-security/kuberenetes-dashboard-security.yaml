@@ -55,7 +55,7 @@
 	- create a token for service account to login to dashboard: kubectl create token admin-user -n kubernetes-dashboard
 	- As you can see admin-user is too powerful, now create a readonly service account and assign the view cluster-role to this service account
 	- cat <<EOF | kubectl apply -f -
-	apiVersion: v1
+apiVersion: v1
 	kind: ServiceAccount
 	metadata:
 	  name: readonly-user
