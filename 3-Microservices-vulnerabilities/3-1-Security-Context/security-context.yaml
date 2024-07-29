@@ -1,7 +1,6 @@
 - We saw in the previous lectures when you run a docker container you have the option to define a set of securities standards such as the ID of the user used to run the container (docker run --user=1001 ubuntu sleep 3600), the Linux capabilities that can be added or removed from the container (docker run --cap-add MAC_ADMIN ubuntu) etc these can be configured in kubernetes as well
 
-docker run --user=1001 ubuntu sleep 3600
-docker run -cap-add MAC_ADMIN ubuntu
+sudo docker run --user=1001 --cap-add MAC_ADMIN ubuntu sleep 3600
 
 apiVersion: v1
 kind: Pod
@@ -30,7 +29,7 @@ spec:
       runAsUser: 1000
 
 - To add capabilities use the capabilities option
-
+cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Pod
 metadata:
@@ -44,9 +43,13 @@ spec:
       runAsUser: 1000
       capabilities:
         add: ["MAC_ADMIN"]
+EOF
+kubectl exec -it web-pod -- date -s '19 APR 2012 11:14:00'
+#operation not permitted
 
 - Add SYS_TIME capability to the container's securityContext
 
+cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Pod
 metadata:
@@ -59,5 +62,6 @@ spec:
     securityContext:
       capabilities:
         add: ["SYS_TIME"]
+EOF
 
-  $ kubectl exec -it ubuntu-sleeper -- date -s '19 APR 2012 11:14:00'
+kubectl exec -it web-pod -- date -s '19 APR 2012 11:14:00'

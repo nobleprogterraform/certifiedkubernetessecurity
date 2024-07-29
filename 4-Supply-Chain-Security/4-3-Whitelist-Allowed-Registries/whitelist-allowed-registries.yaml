@@ -1,0 +1,189 @@
+In this section, we will take a look at Whitelist Allowed Registries Image Policy Webhook:
+
+As a user with access to the Kubernetes cluster I could deploy any application in the form of a pod in the cluster. And with no-one to stop me from doing that, that vulnerable image could risk the security of all other applications running on the cluster. If hackers gain access to that image, they may exploit vulnerabilities in the image and access other applications running on the cluster or even crack down into the underlying operating system. So it's important to have governance in place to ensure images are pulled from approved registries only.
+
+When a request comes in , say to create a pod, it goes through authentication, authorization and then through admission controllers before being created. We talked about the mutating and validating admission controllers. We said that we could deploy our own admission webhook server and configure the validating admission webhook to make a call to this server.
+
+Within the admission webhook server we check if the image name has internal-registry.io in it. If not we reject the request with an error message that says it's not from a supported registry. And we can perform any kind of checks and add any kind of error message there.
+
+Another option is to deploy an OPA service and then configure a validating webhook to connect to this service. And then we create policies to restrict trusted registries using the rego tool.
+
+References:
+https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#imagepolicywebhook
+
+0. 
+openssl genrsa -out server-key.pem 2048
+openssl req -new -key server-key.pem -subj "/O=system:nodes/CN=system:node:image-bouncer-webhook.default.pod.cluster.local" -addext "subjectAltName = DNS:image-bouncer-webhook, DNS:image-bouncer-webhook.default.svc, DNS:image-bouncer-webhook.default.svc.cluster.local"  -out server.csr
+
+
+
+cat <<EOF | kubectl apply -f -
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: image-bouncer-webhook.default
+spec:
+  groups:
+  - kubeadm:cluster-admins
+  - system:authenticated
+  request: $(cat server.csr | base64 | tr -d '\n')
+  signerName: kubernetes.io/kubelet-serving
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+EOF
+
+kubectl certificate approve image-bouncer-webhook.default
+kubectl get csr image-bouncer-webhook.default -o jsonpath='{.status.certificate}' | base64 --decode > server.crt
+#sudo chmod a+rw -R /etc/kubernetes/pki (if permission denied)
+sudo cp server.crt /etc/kubernetes/pki
+
+kubectl create secret tls tls-image-bouncer-webhook \
+  --key server-key.pem \
+  --cert server.crt
+
+#sudo chmod a+rw -R /etc/hosts
+echo "127.0.0.1 image-bouncer-webhook" >> /etc/hosts
+
+
+1. Deploy an Image Policy Webhook server: image-policy-webhook.yaml
+
+cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: image-bouncer-webhook
+  name: image-bouncer-webhook
+spec:
+  type: NodePort
+  ports:
+    - name: https
+      port: 443
+      targetPort: 1323
+      protocol: "TCP"
+      nodePort: 30080
+  selector:
+    app: image-bouncer-webhook
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-bouncer-webhook
+spec:
+  selector:
+    matchLabels:
+      app: image-bouncer-webhook
+  template:
+    metadata:
+      labels:
+        app: image-bouncer-webhook
+    spec:
+      containers:
+        - name: image-bouncer-webhook
+          imagePullPolicy: Always
+          image: "kainlite/kube-image-bouncer:latest"
+          args:
+            - "--cert=/etc/admission-controller/tls/tls.crt"
+            - "--key=/etc/admission-controller/tls/tls.key"
+            - "--debug"
+            - "--registry-whitelist=docker.io,registry.k8s.io"
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/admission-controller/tls
+      volumes:
+        - name: tls
+          secret:
+            secretName: tls-image-bouncer-webhook
+EOF
+
+2. AdmissionConfiguration file and Kubeconfig file:
+sudo vi /etc/kubernetes/pki/admission_configuration.yaml 
+
+apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: ImagePolicyWebhook
+  configuration:
+    imagePolicy:
+      kubeConfigFile: /etc/kubernetes/pki/admission_kube_config.yaml
+      allowTTL: 50
+      denyTTL: 50
+      retryBackoff: 500
+      defaultAllow: false
+
+sudo vi /etc/kubernetes/pki/admission_kube_config.yaml 
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority: /etc/kubernetes/pki/server.crt
+    server: https://image-bouncer-webhook:30080/image_policy
+  name: bouncer_webhook
+contexts:
+- context:
+    cluster: bouncer_webhook
+    user: api-server
+  name: bouncer_validator
+current-context: bouncer_validator
+preferences: {}
+users:
+- name: api-server
+  user:
+    client-certificate: /etc/kubernetes/pki/apiserver.crt
+    client-key:  /etc/kubernetes/pki/apiserver.key
+
+3. enable Image policy webhook:
+    - --enable-admission-plugins=NodeRestriction,ImagePolicyWebhook
+    - --admission-control-config-file=/etc/kubernetes/pki/admission_configuration.yaml
+
+4. 
+cat <<EOF | kubectl create -f -
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-latest
+  labels:
+    tier: nginx-latest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: nginx-latest
+  template:
+    metadata:
+      labels:
+        tier: nginx-latest
+    spec:
+      containers:
+      - name: nginx-latest
+        image: nginx
+EOF
+
+kubectl describe rs nginx-latest 
+1.13.8
+5. 
+cat <<EOF | kubectl create -f -
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-versioned
+  labels:
+    tier: nginx-versioned
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: nginx-versioned
+  template:
+    metadata:
+      labels:
+        tier: nginx-versioned
+    spec:
+      containers:
+      - name: nginx-versioned
+        image: nginx:1.13.8
+EOF
+
+kubectl describe rs nginx-versioned

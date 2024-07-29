@@ -18,6 +18,8 @@ Privileged: This policy grants the highest level of access without any restricti
 Baseline: This policy aims to be highly restrictive to prevent known privilege escalation while still allowing the use of the default Pod configuration with minimal alterations. The baseline policy imposes restrictions on specific capabilities, including hostNetwork, hostPID, hostIPC, hostPath, hostPort, and the addition of Linux capabilities.
 Restricted: This strict policy follows current best practices for hardening Pods. It builds upon the baseline policy and adds additional constraints, such as prohibiting the Pod from running as the root user or in the root group. Restricted policies may affect the functionality of applications and are designed for running security-critical applications. Read more about PSS in the official Kubernetes documentation https://kubernetes.io/docs/concepts/security/pod-security-standards/
 
+PSA: The Kubernetes Pod Security Standards define different isolation levels for Pods. These standards let you define how you want to restrict the behavior of pods in a clear, consistent fashion.
+Kubernetes offers a built-in Pod Security admission controller to enforce the Pod Security Standards. Pod security restrictions are applied at the namespace level when pods are created.
 Pod Security Admission(PSA) operates in three modes to enforce the controls defined by PSS:
 Enforce: When this mode is enabled, the PSA evaluates the Pod against the policy. If the Pod fails to meet the policy requirements, it is rejected.
 Audit: In this mode, the Pod is allowed to run even if it violates the policy. However, the violation is recorded in the Kubernetes audit log.
@@ -30,6 +32,7 @@ Then, Label Value: The value of these labels indicates the policy level to be en
 
 Lab1:
 We want to apply pod security on namespace alpha. To achieve that, add the following label to the namespace alpha
+kubectl create ns alpha
 kubectl label ns alpha pod-security.kubernetes.io/warn=baseline
 
 Lab2:
@@ -47,6 +50,7 @@ spec:
        privileged: true
 
 Lab3: Multi PSA
+kubectl create ns beta
 kubectl label ns beta \
 pod-security.kubernetes.io/enforce=baseline \
 pod-security.kubernetes.io/warn=restricted	
@@ -61,13 +65,10 @@ spec:
     image: nginx
     securityContext:
       runAsUser: 0
+      privileged: true
 
+#Above will violate the baseline policy by running privileged:true so it will be forbidden to create
 
-Lab: How can a cluster administrator specify the configuration file path for the admission configuration resource in the API server?
-In a Kubernetes cluster, the cluster administrator can specify the configuration file path for the admission configuration resource in the API server using the --admission-control-config-file flag.
-This flag allows administrators to provide a file path that contains the configuration for admission controllers
-Bear in mind that this file is in the API server pod's file system, therefore you must mount it as a hostPath or configmap volume
-Refernce: https://kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-admission-controller/
 
 
 

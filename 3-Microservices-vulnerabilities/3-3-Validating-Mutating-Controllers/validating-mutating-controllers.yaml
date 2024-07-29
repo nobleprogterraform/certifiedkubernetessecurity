@@ -7,6 +7,15 @@ DefaultStorageClass plugin is enabled by default.
 
 When you are submitting a request to create a PVC. The request goes through authentication, authorization and finally the admission controller. The defaultStorageClass admission controller will watch for requests to create a PVC and check if it has a storage class mentioned in it. If not, it will modify your request to add the default storage class to your request. This could be whatever storage class is configured as the default storage class in your cluster. So when the pvc is created and you inspect it you’ll see that a storage class default is added to it, even though you hadn’t specified it during creation. So this type of admission controller is known as a mutating admission controller. It can change or mutate the object itself before it is created.
 
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -18,7 +27,9 @@ spec:
     requests:
       storage: 500Mi  
 
-kubectl describe pvc myclaim
+kubectl describe pvc myclaim # Check the storage class named as local-storage
+
+
 
 - Custom Admission Controller:
 Admission plugins can be developed as extensions and run as webhooks configured at runtime.

@@ -1,0 +1,80 @@
+In this section, we will take a look at Use static analysis of user workloads:
+Kubesec helps in scanning and analyzing kuberentes deployments, pods and replica sets.
+Kubesec helps analyze a given resource definition file and returns a score along with details about the critical issues that were found in it. In this case it's rightly detected the issue with privileged containers.
+Kubesec supports both yaml and json formats for resource definitions.
+
+
+To install kubesec plugin, Run:
+wget https://github.com/controlplaneio/kubesec/releases/download/v2.11.0/kubesec_linux_amd64.tar.gz
+tar -xvf  kubesec_linux_amd64.tar.gz
+sudo mv kubesec /usr/bin/
+
+
+To Scan:
+cat > node.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: node
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/google-samples/node-hello:1.0
+    imagePullPolicy: IfNotPresent
+    name: node
+    resources: {}
+    securityContext:
+      privileged: true
+      readOnlyRootFilesystem: false
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-zm48s
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: controlplane
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: kube-api-access-zm48s
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+EOF
+
+kubesec scan node.yaml  > kubesec_report.json
+Fix the privileged flag to false and rerun the report
+
+Use curl command to POST a file to the server as follows:
+curl -sSX POST --data-binary @"node.yaml" https://v2.kubesec.io/scan

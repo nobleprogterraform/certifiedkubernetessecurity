@@ -15,7 +15,7 @@ chmod 755 ./opa
 
 - Second step is to create policies and load it in OPA
 Rego is the language used to write policies in OPA
-vi sample.rego
+cat >sample.rego <<EOF
 package httpapi.authz
 import input
 default allow = false 
@@ -23,16 +23,248 @@ allow {
 input.path == "home"
 input.user == "Kedar"
 }
+EOF
 
 Run Below command to import sample.rego in OPA
-$ curl -X PUT --data-binary @sample.rego http://localhost:8181/v1/policies/samplepolicy
+curl -X PUT --data-binary @sample.rego http://localhost:8181/v1/policies/samplepolicy
 To view all existing policies
 curl http://localhost:8181/v1/policies
 
 
+---------------------------OPA in kubernetes--------------------
+Open Policy Agent (OPA) For Kubernetes:
+OPA is a standardized way to implement policies for your environment (who has access to what, what can be deployed, where it can be deployed, etc.)
+So with OPA you have a way to manage every single layer of your environment with fine-grained control over how all pieces of your environment interact with one another. If you have a Kubernetes environment, you can manage everything from who has access to what Pods to how Pods are being deployed via a Kubernetes Manifest
+The way that you’re able to implement those policies is by using something called Rego, which is the OPA language (think of it as a programming language). Rego allows you to define the exact policy that you want in your Kubernetes environment down to the smallest form factor, like a Label. Because the policies are all code, it allows you to work with your team for collaboration
+How Does It Fit Into Kubernetes: At the highest level, Kubernetes works as an API. It’s a way to manage infrastructure and services via an API.
+At the second to the highest level, there are Controllers. Controllers look at what you’ve deployed to Kubernetes, like Pods, and confirm that the current state is the desired state
+OPA Gatekeeper (or sometimes called the OPA Admission Controller), which is a project providing integration between Kubernetes and OPA, is just like the Controllers that were mentioned above for Pods.the Kubernetes Admission Controller enforces policies for CRUD operations in your Kubernetes cluster. For example pulling images from a authorized registry
 
------OPA in Kubernetes-----------
-cat untrusted-registry.rego 
+
+
+0. configure the Kubernetes context:
+kubectl create ns opa
+kubectl config set-context opa-tutorial --user kubernetes-admin --cluster kubernetes --namespace opa
+kubectl config use-context opa-tutorial
+1. The communication between Kubernetes and OPA must be secured using TLS. Let's use openssl to do just that:
+openssl genrsa -out ca.key 2048
+openssl req -x509 -new -nodes -sha256 -key ca.key -days 100000 -out ca.crt -subj "/CN=admission_ca"
+
+# generate the TLS key and certificate for OPA:
+cat >server.conf <<EOF
+[ req ]
+prompt = no
+req_extensions = v3_ext
+distinguished_name = dn
+
+[ dn ]
+CN = opa.opa.svc
+
+[ v3_ext ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, serverAuth
+subjectAltName = DNS:opa.opa.svc,DNS:opa.opa.svc.cluster,DNS:opa.opa.svc.cluster.local
+EOF
+
+openssl genrsa -out server.key 2048
+openssl req -new -key server.key -sha256 -out server.csr -extensions v3_ext -config server.conf
+openssl x509 -req -in server.csr -sha256 -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 100000 -extensions v3_ext -extfile server.conf
+
+# create a secret to store the TLS credentials for OPA
+kubectl create secret tls opa-server --cert=server.crt --key=server.key --namespace opa
+
+2. Install OPA as an Admission Controller:
+cat <<EOF | kubectl create -f -
+# Grant OPA/kube-mgmt read-only access to resources. This lets kube-mgmt
+# replicate resources into OPA so they can be used in policies.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: opa-viewer
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: Group
+  name: system:serviceaccounts:opa
+  apiGroup: rbac.authorization.k8s.io
+---
+# Define role for OPA/kube-mgmt to update configmaps with policy status.
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: opa
+  name: configmap-modifier
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["update", "patch"]
+---
+# Grant OPA/kube-mgmt role defined above.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: opa
+  name: opa-configmap-modifier
+roleRef:
+  kind: Role
+  name: configmap-modifier
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: Group
+  name: system:serviceaccounts:opa
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: opa
+  namespace: opa
+spec:
+  selector:
+    app: opa
+  ports:
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 8443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: opa
+  namespace: opa
+  name: opa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opa
+  template:
+    metadata:
+      labels:
+        app: opa
+      name: opa
+    spec:
+      containers:
+        # WARNING: OPA is NOT running with an authorization policy configured. This
+        # means that clients can read and write policies in OPA. If you are
+        # deploying OPA in an insecure environment, be sure to configure
+        # authentication and authorization on the daemon. See the Security page for
+        # details: https://www.openpolicyagent.org/docs/security.html.
+        - name: opa
+          image: openpolicyagent/opa:0.38.1-rootless
+          args:
+            - "run"
+            - "--server"
+            - "--tls-cert-file=/certs/tls.crt"
+            - "--tls-private-key-file=/certs/tls.key"
+            - "--addr=0.0.0.0:8443"
+            - "--addr=http://127.0.0.1:8181"
+            #- "--set=services.default.url=http://host.minikube.internal:8888"
+            #- "--set=bundles.default.resource=bundle.tar.gz"
+            - "--log-format=json-pretty"
+            - "--set=status.console=true"
+            - "--set=decision_logs.console=true"
+          volumeMounts:
+            - readOnly: true
+              mountPath: /certs
+              name: opa-server
+          readinessProbe:
+            httpGet:
+              path: /health?plugins&bundle
+              scheme: HTTPS
+              port: 8443
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              scheme: HTTPS
+              port: 8443
+            initialDelaySeconds: 3
+            periodSeconds: 5
+        - name: kube-mgmt
+          image: openpolicyagent/kube-mgmt:2.0.1
+          args:
+            - "--replicate-cluster=v1/namespaces"
+            - "--replicate=networking.k8s.io/v1/ingresses"
+      volumes:
+        - name: opa-server
+          secret:
+            secretName: opa-server
+---
+apiVersion: v1
+data:
+  cm.yml: |
+    package system
+
+    import data.kubernetes.admission
+
+    main = {
+      "apiVersion": "admission.k8s.io/v1",
+      "kind": "AdmissionReview",
+      "response": response,
+    }
+
+    default uid = ""
+
+    uid = input.request.uid
+
+    response = {
+        "allowed": false,
+        "uid": uid,
+        "status": {
+            "message": reason,
+        },
+    } {
+        reason = concat(", ", admission.deny)
+        reason != ""
+    }
+    else = {"allowed": true, "uid": uid}
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: opa-default-system-main
+  namespace: opa
+EOF
+
+
+3. Last, we register OPA as an admission controller by creating a ValidatingWebhookConfiguration:
+cat > webhook-configuration.yaml <<EOF
+kind: ValidatingWebhookConfiguration
+apiVersion: admissionregistration.k8s.io/v1
+metadata:
+  name: opa-validating-webhook
+webhooks:
+  - name: validating-webhook.openpolicyagent.org
+    namespaceSelector:
+      matchExpressions:
+      - key: openpolicyagent.org/webhook
+        operator: NotIn
+        values:
+        - ignore
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*"]
+    clientConfig:
+      caBundle: $(cat ca.crt | base64 | tr -d '\n')
+      service:
+        namespace: opa
+        name: opa
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+EOF
+
+kubectl apply -f webhook-configuration.yaml
+
+4. Create policy rego file for testing:
+cat >untrusted-registry.rego <<EOF
 package kubernetes.admission
 
 deny[msg] {
@@ -41,23 +273,14 @@ deny[msg] {
   not startswith(image, "hooli.com/")
   msg := sprintf("image '%v' comes from untrusted registry", [image])
 }
+EOF
 
-cat unique-host.rego 
-package kubernetes.admission
-import data.kubernetes.ingresses
+#5.Create a configmap for OPA using the untrusted-registry.rego policy:
+kubectl create configmap untrusted-registry --from-file=untrusted-registry.rego
 
-deny[msg] {
-    some other_ns, other_ingress
-    input.request.kind.kind == "Ingress"
-    input.request.operation == "CREATE"
-    host := input.request.object.spec.rules[_].host
-    ingress := ingresses[other_ns][other_ingress]
-    other_ns != input.request.namespace
-    ingress.spec.rules[_].host == host
-    msg := sprintf("invalid ingress host %q (conflicts with %v/%v)", [host, other_ns, other_ingress])
-}
-
-cat test.yaml 
+#6. create a test pod in dev namespace
+kubectl create ns dev
+cat <<EOF | kubectl create -n dev -f -
 kind: Pod
 apiVersion: v1
 metadata:
@@ -71,6 +294,6 @@ spec:
     env:
     - name: MYSQL_ROOT_PASSWORD
       value: root
-  
-  kubectl create configmap untrusted-registry --from-file=untrusted-registry.rego
-  
+EOF
+
+# we should see: Error from server: error when creating "STDIN": admission webhook "validating-webhook.openpolicyagent.org" #denied the request: image 'nginx' comes from untrusted registry

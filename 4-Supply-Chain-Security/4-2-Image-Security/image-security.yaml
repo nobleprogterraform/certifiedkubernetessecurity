@@ -1,0 +1,37 @@
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+
+From the previous nginx-pod.yml:
+the name of the image/repository is nginx
+the user account here is nginx
+the image is pulled from the default registry docker.io
+
+There are many registries like google gcr gcr.io
+When you have an application built in house, you should host an internal private registry.
+
+From docker respective, to run a container using a private image:
+docker login private-registry.io
+docker run private-registry.io/apps/internal-app
+
+From Kubernetes respective, Pull an image from private registry:
+Create a secret object with the Creds
+kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
+
+Inside the pod definition, specify the imagePullSecrets with the regcred secret
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - image: private-registry.io/apps/internal-app
+    name: nginx
+  imagePullSecrets:
+  - name: regcred

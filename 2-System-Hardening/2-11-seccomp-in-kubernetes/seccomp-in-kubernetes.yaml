@@ -7,6 +7,7 @@
 		kubectl run amicontained --image r.j3ss.co/amicontained amicontained -- amicontained
 		kubectl logs amicontained
 	- When pod is created we can inspect the logs to pull the same information you'll notice that this time the results are quite different
+	
 	- when they container is run as a pod within kubernetes the number of syscalls blocks is only 21 and the status of seccomp is disabled and this is because kubernetes as of this recording and version 1.30 does not implements seccomp by default
 	- In order to implement seccomp in kubernetes let us use a pod definition file.  now to apply a seccomp profile we have to add the seccomp profile field in the security context section of the pod
 	- When we run a continer in a pod, there is a possibility that the process running inside the container can escalate its privileges which may allow it to have more privileges than it parent process. To prevent this from happening it's a good idea to add allowPrivilegeEscalation=false under the security context for the container.
@@ -15,3 +16,5 @@
 	let us create a new pot with the ubuntu image where container will print a message and sleep for 100 seconds 
 	we use the custom seccomp profile set the type to localhost, we can then make use of the localhostProfile field which is the path of a pre-configured profile on the node 
 	one important thing to note here is that this path must be relative to the default seccomp profile location which is /var/lib/kubelet/seccomp
+
+	https://github.com/moby/moby/blob/master/profiles/seccomp/default.json

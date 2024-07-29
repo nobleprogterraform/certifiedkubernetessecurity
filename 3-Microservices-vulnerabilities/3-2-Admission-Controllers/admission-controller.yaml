@@ -23,7 +23,3 @@ $ kubectl run nginx --image nginx -n blue
 Now run again: $ kubectl run nginx --image nginx -n blue
 
 
-- Disable DefaultStorageClass admission controller:
-  Update /etc/kubernetes/manifests/kube-apiserver.yaml as below
-- --disable-admission-plugins=DefaultStorageClass
-
