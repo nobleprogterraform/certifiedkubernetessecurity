@@ -1,0 +1,47 @@
+Behavioural analytics of syscalls:
+In this module we will understand about how do we identify breaches that have already occurred in kubernetes cluster.
+For this we can make use of tools like Falco from sysdig. 
+In the eralier section we discssed about how to check syscalls and tools like strace can be used to analyze the
+syscalls that are used by applications inside the pods.
+When we have hundreds of apps running on several hundred pods, which are generating thousands of syscalls, it is
+quite meaningless to just monitor the syscalls.
+What we need is a way to analyze the syscalls and filter the events that are suspecious. For eg someone who is accessing the bash shell of a container or a program trying to access /etc/shadow where the password data are stored, these can be
+considered as suspecious activities.
+Falco can monitor these events and send alerts using various notification channels.
+
+
+Falco Installation and Overview:
+In this section we will install Falco in our k8s cluster and then use it to detect and analyze threats.
+Before we install Falco and start using it, lets take a quick look at high level overview of how falco works.
+Falco needs to know what system calls are coming through from applications in the user space into the linux kernel.
+This means it has to insert itself into the kernel to sit in the middle and see whats coming in.
+One way Falco does this is by making use of kernel module. However, this basically means that we insert code right inside the Linux kernel, so its pretty intrusive. And some managed kubernetes provider do not allow us to do so.
+Falco can also interact with kernel with what is called as EBPF or Extended Berkely packet filter. EBPF is somewhat less
+intrusive and safer.
+System calls are then analyzed by sysdig liberaries in the userspace. The events are then filtered by falco policy engine by making use of predefined rules that can detect whehter event was suspecious or not. Such an event is then alerted by various channels such as syslog files, standard outputs, or alerting mechanise like slack channel or email alerts
+
+To install Falco as regular software package on linux operating system (https://falco.org/docs/install-operate/installation/):
+{
+curl -fsSL https://falco.org/repo/falcosecurity-packages.asc | \
+  sudo gpg --dearmor -o /usr/share/keyrings/falco-archive-keyring.gpg
+}
+
+{
+echo "deb [signed-by=/usr/share/keyrings/falco-archive-keyring.gpg] https://download.falco.org/packages/deb stable main" | \
+sudo tee -a /etc/apt/sources.list.d/falcosecurity.list
+}
+
+{
+sudo apt-get update -y
+}
+
+Install kernel headers:
+sudo apt install -y dkms make linux-headers-$(uname -r)
+Install Falco:
+sudo apt-get install -y falco
+Check falco service:
+sudo systemctl list-unit-files "falco*"
+sudo systemctl status falco-modern-bpf
+
+
+

@@ -1,0 +1,78 @@
+Immutable Infrastructure:
+Lets us assume an environment where 3 web servers which are running nginx with version 1.17 directly on a host.
+When a new version of nginx is released, we upgrade the sofware running on the server first from 1.17 to 1.18 and then to 1.19.
+When we update the software version on the existing set of web servers from an older version to new version, this is known
+as the in-place updates. This is an example of mutable infrastructure.
+Lets assume that during upgrade webserver 1 and 2 got updated successfully but web server 3 does not have all the dependency and the upgrade fails. This is known as configuration drift.
+A configuration drift can leave infrastructure in inconsistent state.
+Now instead of sofwate versions on the web servers we can spin up new web servers with the new version of sofware 
+and then delete old ones. This is known as immutable infrastructure. 
+With Immuatable infra we can not carry in-place updates on the resources anymore, and same holds true for containers as well
+Then change should be first made on the image and new image should be used to spin up new containers.
+But this does not mean that containers can not changed during runtime.We can easily make changes to containers if we 
+want to.
+For example by default we can copy files directly to the root file system or make changes by getting a shell into the
+container. This is not a desirable approach. An attacker can easily change code in a running container and use it for
+malicious purpose. Now lets see how we can prevent this.
+
+Ensure immutabilty of containers at runtime:
+Although containers are meant to be immutable by default, we can carry out in-place updates on them.
+Now, this can be done in a number of different ways - such as copying files directly into the pod or getting a shell into the container and making changes e.t.c.
+docker cp nginx.conf nginx:/etc/nginx
+Or
+kubectl exec -it nginx -- apt update
+
+To prevent this, make sure that we cannot write to the file system once the pod is started.
+To do this we can use security contexts with readOnlyRootFilesystem=true
+cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    securityContext:
+      readOnlyRootFilesystem: true
+EOF
+
+However, adding this field may break the application running inside the container, for example the above nginx pod will fail. This is because application running inside it would probably need to write to certain directories to function properly. Nginx needs to be able to write into 2 different directories, /var/run to store data that nginx needs to start
+and /var/cache/nginx for storing cache data.
+Because of readOnlyRootFilesystem=true we can no longer write to root file system.
+To fix this we can make use of volumes to be mounted on those specific directories. For our example this can be empty
+directories we dont need to persist this data.
+
+cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    securityContext:
+      readOnlyRootFilesystem: true
+    volumeMounts:
+    - name: cache-volume
+      mountPath: /var/cache/nginx
+    - name: runtime-volume
+      mountPath: /var/run
+  volumes:
+    - name: cache-volume
+      emptyDir: {}
+    - name: runtime-volume
+      emptyDir: {}
+EOF
+
+Now if you start the container it should work and updating container should still fail. 
+
+kubectl exec -it nginx -- apt update
+
+Also using privledge flag can also break immutability of containers. As a best practice do not use privileged flag
+and run the containers as non root user as much as possible.

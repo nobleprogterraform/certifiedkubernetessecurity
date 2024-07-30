@@ -1,0 +1,75 @@
+In this section, we will see how to audit the events happening in kubernetes cluster. 
+In the previous section we saw how to detect suspecious events using falco for ex a shell being opened inside a conatiner 
+or a write happnes a sensitive file from within a container.
+But how do we audit the events happening within the kubernetes cluster such as which objects are created,who created,
+when was it created, which namespace in it created,where was the request inititated from etc.
+All these bits of information are called events in kubernetes.
+
+Auditing events would allow us to detect suspicious or abnormal operations within the kubernetes cluster.
+Kubernetes provides auditing by default and it is handled by the kube-apiserver.
+Audit records begin their life cycle inside the kube-apiserver component. Each request on each stage of its execution generates an audit event, which is then pre-processed according to a certain policy and written to a backend. The policy determines what's recorded and the backends persist the records.
+
+Each request can be recorded with an associated stage. The defined stages are:
+RequestReceived: - The stage for events generated as soon as the audit handler receives the request, and before it is delegated down the handler chain.
+ResponseStarted: - Once the response headers are sent, but before the response body is sent. This stage is only generated for long-running requests.
+ResponseComplete: - The response body has been completed and no more bytes will be sent.
+Panic: - Events generated when a panic occurred.
+
+To Record the event if pods inside the prod-namespace are deleted:
+sudo chmod a+rw -R /etc/kubernetes
+sudo cat > /etc/kubernetes/prod-audit.yaml <<EOF
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata
+  namespaces: ["prod"]
+  verbs: ["delete"]
+  resources:
+  - group: ""
+    resources: ["secrets"]
+EOF
+omitStages: Don't generate audit events for all requests in the RequestReceived stage.
+namespaces: is an optional field and if it is unspecified, the policy will consider objects across all namespaces wherever applicable.
+verbs: field which decides the specific operations on the objects the policy needs to match. This field is optional as well, if it is not declared, every operation, such as create/update and delete will be logged by default.
+resources within it, we can specify multiple kubernetes objects under audit so it is an array of objects.
+level: field it can accept 4 different values.
+  None: implies that events will not be logged for this specific rule. So in this case no events will be logged if the pod called web-app is deleted in the prod-namespace.
+  Metadata: in this case if the event matches the rule –only the metadata such as the timestamp, user, resources, verbs e.t.c will be logged.
+  Request: to get more details which will include the metadata as well as the request body. This is more verbose compared to the Metadata.
+  RequestResponse: to log the metadata, the request body as well as the response body.
+
+Till now we have created audit policy, however we have not enabled the kube-apiserver to use this yet.
+Auditing is disabled by defaut in kuberenetes. To enable it we have to configure an audit backend.
+2 types of backend are supported. A log backend that store the audit events to a file on the master node.
+or a webhook bakcend which write the events to a remote webhook server.
+
+To enalble auditing 
+1. Add these arguments into api server manifest
+  - --audit-policy-file=/etc/kubernetes/prod-audit.yaml
+  - --audit-log-path=/var/log/prod-secrets.log
+
+2. Add these mounts:
+- mountPath: /etc/kubernetes/prod-audit.yaml
+  name: audit
+  readOnly: true
+- mountPath: /var/log/prod-secrets.log
+  name: audit-log
+  readOnly: false
+
+3. Add these volumes:
+- name: audit
+  hostPath:
+    path: /etc/kubernetes/prod-audit.yaml
+    type: File
+- name: audit-log
+  hostPath:
+    path: /var/log/prod-secrets.log
+    type: FileOrCreate
+
+Test the auditing:
+kubectl create ns prod
+kubectl create secret -n prod generic test --from-literal x=1
+kubectl delete secret -n prod test
+# Wait a few secords
+cat /var/log/prod-secrets.log
+  
