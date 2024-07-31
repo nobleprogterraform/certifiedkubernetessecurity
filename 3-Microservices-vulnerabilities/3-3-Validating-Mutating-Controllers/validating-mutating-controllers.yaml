@@ -25,7 +25,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 500Mi  
+      storage: 50Mi  
 
 kubectl describe pvc myclaim # Check the storage class named as local-storage
 

@@ -21,4 +21,8 @@ syscalls they need. Seccomp was first introduced into 2005 and has been part of 
 	- blacklist type profile, a blacklist does the opposite of a white list it allows every syscall by default and rejects those that we have specifically defined inside 
 	- default docker seccomp profile as we saw earlier blocks around 60 of the 300 syscalls on the X86 architecture these includes called such as rebooting system and manipulating the system clock, mounting an unmounting file system creating and deleting modules etc
 	- We can use custom seccomp profile by updating default seccomp profile and save in seprate custom.json
-		docker run -it --rm --security-opt seccomp=/root/custom.json \ docker/whalesay /bin/bash
+on host machine
+cd /Downloads/certified-kubernetes-security-specialist
+
+sudo docker run -it --rm --security-opt seccomp=2-System-Hardening/2-10-Restrict-syscalls-using-seccomp/custom.json docker/whalesay /bin/bash
+mkdir test

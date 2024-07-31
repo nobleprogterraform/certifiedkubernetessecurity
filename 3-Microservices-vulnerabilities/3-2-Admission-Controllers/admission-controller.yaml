@@ -17,9 +17,9 @@ kubectl exec kube-apiserver-controlplane -n kube-system -- kube-apiserver -h | g
 
 - Add an admission controller NamespaceAutoProvision:
 $ kubectl run nginx --image nginx -n blue
-  vim /etc/kubernetes/manifests/kube-apiserver.yaml
-  update --enable-admission-plugins=NodeRestriction
-  with --enable-admission-plugins=NodeRestriction,NamespaceAutoProvision
+vim /etc/kubernetes/manifests/kube-apiserver.yaml
+update --enable-admission-plugins=NodeRestriction
+with --enable-admission-plugins=NodeRestriction,NamespaceAutoProvision
 Now run again: $ kubectl run nginx --image nginx -n blue
 
 

@@ -1,13 +1,4 @@
-	- Before we start testing seccomp profiles in kubernetes ports let us see how docker and kubernetes use the secccom by default
-	- In the previous lecture we learned that docker blocks around 60 syscalls with its default profile.
-	- well there's a simple way to test this, using an open source container introspection tool called amicontained
-		docker run r.j3ss.co/amicontained amicontained
-	- As you can see 64 syscalls are blocked in this case. docker uses the defaults the seccomp profile, we can also see that seccomp is running in mode 2 or the filtering mode
-	- now let us use the same image but this time as a kubernetes pod. 
-		kubectl run amicontained --image r.j3ss.co/amicontained amicontained -- amicontained
-		kubectl logs amicontained
-	- When pod is created we can inspect the logs to pull the same information you'll notice that this time the results are quite different
-	
+
 	- when they container is run as a pod within kubernetes the number of syscalls blocks is only 21 and the status of seccomp is disabled and this is because kubernetes as of this recording and version 1.30 does not implements seccomp by default
 	- In order to implement seccomp in kubernetes let us use a pod definition file.  now to apply a seccomp profile we have to add the seccomp profile field in the security context section of the pod
 	- When we run a continer in a pod, there is a possibility that the process running inside the container can escalate its privileges which may allow it to have more privileges than it parent process. To prevent this from happening it's a good idea to add allowPrivilegeEscalation=false under the security context for the container.

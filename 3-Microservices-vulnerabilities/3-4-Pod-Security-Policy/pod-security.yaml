@@ -12,11 +12,11 @@ jsPolicy
 Pod Security Admission (PSA) and Kubernetes Pod Security Standards (PSS):
 PSA is an integrated solution within Kubernetes that offers built-in capabilities for governing pod security. The solution incorporates a webhook project designed for admission controllers, which ensures enforcement of the controls outlined in the Pod Security Standards (PSS). This admission controller approach bears similarity to the functioning of PAC (Policy as Code) systems.
 
-Bit about Pod Security Standards(PSS):
+Bit about Pod Security Standards(PSS): https://kubernetes.io/docs/concepts/security/pod-security-standards/
 PSS defines three different security policies that cover a wide range of security needs. These policies are cumulative and vary in their level of restrictiveness:
 Privileged: This policy grants the highest level of access without any restrictions. It is useful for system-wide programs like logging agents, CNIs, and storage drivers that require privileged access.
 Baseline: This policy aims to be highly restrictive to prevent known privilege escalation while still allowing the use of the default Pod configuration with minimal alterations. The baseline policy imposes restrictions on specific capabilities, including hostNetwork, hostPID, hostIPC, hostPath, hostPort, and the addition of Linux capabilities.
-Restricted: This strict policy follows current best practices for hardening Pods. It builds upon the baseline policy and adds additional constraints, such as prohibiting the Pod from running as the root user or in the root group. Restricted policies may affect the functionality of applications and are designed for running security-critical applications. Read more about PSS in the official Kubernetes documentation https://kubernetes.io/docs/concepts/security/pod-security-standards/
+Restricted: This strict policy follows current best practices for hardening Pods. It builds upon the baseline policy and adds additional constraints, such as prohibiting the Pod from running as the root user or in the root group. Restricted policies may affect the functionality of applications and are designed for running security-critical applications. 
 
 PSA: The Kubernetes Pod Security Standards define different isolation levels for Pods. These standards let you define how you want to restrict the behavior of pods in a clear, consistent fashion.
 Kubernetes offers a built-in Pod Security admission controller to enforce the Pod Security Standards. Pod security restrictions are applied at the namespace level when pods are created.

@@ -1,4 +1,5 @@
-1. Load apparmor profile in all cluster nodes
+1. Load apparmor profile in all cluster worker nodes:
+sudo apt install  apparmor-utils -y
 
 sudo apparmor_parser -q <<EOF
 #include <tunables/global>
